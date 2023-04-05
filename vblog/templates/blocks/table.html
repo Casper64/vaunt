@@ -1,0 +1,16 @@
+<div class="table">
+    @if table_headers.len > 0
+    <div class="tc-row tc-head">
+        @for cell in table_headers
+        <div class="tc-cell">@cell</div>
+        @endfor
+    </div>
+    @endif
+    @for row in table_rows
+    <div class="tc-row">
+        @for cell2 in row
+        <div class="tc-cell">@cell2</div>
+        @endfor
+    </div>
+    @endfor
+</div>

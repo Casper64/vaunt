@@ -1,0 +1,9 @@
+<h1>All articles:</h1>
+<div class="articles">
+@for article in articles
+    <div class="article">
+        <h2>@article.name</h2>
+        <a href="/articles/@article.id">Go to article @article.name</a>
+    </div>
+@endfor
+</div>
