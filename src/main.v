@@ -20,6 +20,8 @@ fn main() {
 	db := pg.connect(user: 'dev', password: 'password', dbname: 'vblog')!
 	vblog.init(db)!
 
+	mut admin_app := vblog.ceate_admin_app(db)
+
 	mut app := &App{
 		db: db
 		controllers: [
@@ -28,13 +30,13 @@ fn main() {
 				pages_dir: pages_dir
 				articles_url: '/articles'
 			}),
+			vweb.controller('/admin', admin_app)
 		]
 	}
 
-	spawn vblog.start_dev_server()
-
-	// make sure our templates compile
 	os.chdir('src')!
+
+	app.handle_static('static', true)
 	vweb.run_at(app, port: 8080, family: .ip, nr_workers: 1)!
 }
 

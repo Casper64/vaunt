@@ -1,0 +1,124 @@
+
+:root {
+    --primary: rgb(39, 121, 189);
+    --primary-light: rgba(39, 121, 189, 0.1);
+    --secondary: #486581;
+    --text: #474545;
+    --light: #F6F9FC;
+    --border-color: #BFBFBF;
+    --shadow:  1px 1px rgba(0,0,0,0.11), 
+    0 2px 2px rgba(0,0,0,0.11), 
+    0 4px 4px rgba(0,0,0,0.11), 
+    0 6px 8px rgba(0,0,0,0.11),
+    0 8px 16px rgba(0,0,0,0.11);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+}
+
+body {
+    background-color: var(--light);
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+h1, h2, h3, p {
+    margin: 0;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+button {
+    border: none;
+    background: unset;
+    appearance: none;
+}
+
+button:focus {
+    outline: none;
+}
+
+main {
+    width: 100%;
+    min-height: calc(100vh - 80px);   
+}
+
+.error {
+    color: red;
+    margin-bottom: 10px;
+}
+
+.popup-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.4);
+    display: grid;
+    align-items: center;
+    justify-items: center;
+    backdrop-filter: blur(2px);
+}
+
+
+nav {
+    background-color: white;
+    height: 80px;
+    padding: 0 50px;
+    display: grid;
+    justify-items: center;
+    position: relative;
+    border: 1px solid var(--border-color);
+
+    a {
+        line-height: 80px;
+        height: 80px;
+    }
+
+    a.brand {
+        color: var(--secondary);
+        font-weight: 900;
+        font-size: 32px;
+        position: absolute;
+        left: 50px;
+    }
+
+    .nav-links {
+        display: grid;
+        grid-auto-flow: column;
+        column-gap: 20px;
+    }
+    .nav-links a {
+        font-size: 24px;
+    }
+}
+
+.edit-button {
+    height: 40px;
+    line-height: 40px;
+    width: fit-content;
+    padding: 0 20px;
+    font-size: 24px;
+    font-weight: 700;
+    background-color: var(--secondary);
+    color: white;
+    border-radius: 5px;
+    transition: .2s ease;
+    cursor: pointer;
+}
+
+.edit-button:hover {
+    box-shadow: var(--shadow);
+}

@@ -12,6 +12,15 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: '../dist'
-  }
+    outDir: '../dist',
+    // assetsDir: 'admin'
+    assetsDir: 'admin/assets',
+    copyPublicDir: true,
+    // rollupOptions: {
+    //   output: {
+    //     assetFileNames: 'admin/assets/[name]-[hash][extname]',
+    //     entryFileNames: 'admin/assets/[name].js',
+    //   },
+    // }
+  },
 })

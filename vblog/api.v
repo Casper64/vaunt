@@ -5,6 +5,7 @@ import db.pg
 import net.http
 import net.html
 import os
+import time
 
 pub struct Api {
 	vweb.Context
@@ -32,7 +33,7 @@ fn cors(mut ctx vweb.Context) bool {
 // get all articles
 pub fn get_all_articles(mut db pg.DB) []Article {
 	articles_arr := sql db {
-		select from Article
+		select from Article order by updated_at desc
 	} or { []Article{} }
 	return articles_arr
 }
@@ -142,12 +143,12 @@ pub fn (mut app Api) save_blocks() vweb.Result {
 	}
 
 	article_id := app.query['article'].int()
-
 	sql app.db {
 		update Article set block_data = app.req.data where id == article_id
+		update Article set updated_at=time.now() where id == article_id
 	} or {
-		app.set_status(400, '')
-		return app.text('error: could not find article')
+		app.set_status(500, '')
+		return app.text('error: could not update article')
 	}
 
 	return app.ok('updated block')

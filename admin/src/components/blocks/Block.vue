@@ -12,10 +12,10 @@ const props = defineProps<{
 
 const icon = computed(() => {
     if (props.block.type == 'heading') {
-        return `/svg/h${props.block.data.level}.svg`
+        return `/admin/svg/h${props.block.data.level}.svg`
     }
     let blockIndex = store.names.indexOf(props.block.type)
-    return `/svg/${store.icons[blockIndex]}.svg`
+    return `/admin/svg/${store.icons[blockIndex]}.svg`
 })
 
 const name = computed(() => capitalize(props.block.type))

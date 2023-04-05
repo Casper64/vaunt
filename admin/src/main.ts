@@ -9,7 +9,7 @@ import VueAxios from 'vue-axios'
 // import Vue3TouchEvents from 'vue3-touch-events'
 import axios from 'axios'
 
-import './assets/styles/main.scss'
+import './assets/admin/styles/main.scss'
 
 const app = createApp(App)
 

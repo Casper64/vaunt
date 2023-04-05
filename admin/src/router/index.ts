@@ -43,8 +43,12 @@ const router = createRouter({
         }, {
             path: '/:pathMatch(.*)*',
             name: 'NotFound',
-            component: View404
-        },
+            component: View404,
+        }, {
+            path: '/admin',
+            name: 'admin',
+            redirect: '/'
+        }
     ]
 })
 
