@@ -13,6 +13,7 @@ pub struct Api {
 		'/': [cors]
 	}
 	pages_dir    string [required; vweb_global]
+	upload_dir   string [required; vweb_global]
 	articles_url string [required; vweb_global]
 pub mut:
 	db pg.DB [required; vweb_global]
@@ -29,14 +30,6 @@ fn cors(mut ctx vweb.Context) bool {
 
 // 			Articles
 // ==========================
-
-// get all articles
-pub fn get_all_articles(mut db pg.DB) []Article {
-	articles_arr := sql db {
-		select from Article order by updated_at desc
-	} or { []Article{} }
-	return articles_arr
-}
 
 // options request is only sent once??? Or per route
 ['/articles'; get; options]
@@ -72,20 +65,26 @@ pub fn (mut app Api) create_article() vweb.Result {
 		app.set_status(500, '')
 		return app.text('error: inserting article into database has failed')
 	}
-	article := rows[0] as Article
+
+	mut article := rows[0] as Article
+
+	if 'thumbnail' in app.files && is_empty('thumbnail-name', app.form) == false {
+		img_id, img_src := app.upload_image('thumbnail', app.form['thumbnail-name']) or {
+			app.set_status(500, '')
+			return app.text('error: failed to upload image')
+		}
+
+		sql app.db {
+			update Article set thumbnail = img_id where id == article.id
+		} or {
+			app.set_status(500, '')
+			return app.text('error: failed to upload article image')
+		}
+
+		article.image_src = img_src
+	}
 
 	return app.json(article)
-}
-
-// get an article by id
-pub fn get_article(mut db pg.DB, article_id int) !Article {
-	article_spec := sql db {
-		select from Article where id == article_id
-	}!
-	if article_spec.len == 0 {
-		return error('article was not found')
-	}
-	return article_spec[0]
 }
 
 ['/articles/:article_id'; get; options]
@@ -123,15 +122,59 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 		return app.text('error: field "name" and "description" are required')
 	}
 
+	if 'thumbnail' in app.files && is_empty('thumbnail-name', app.form) == false {
+		img_id, _ := app.upload_image('thumbnail', app.form['thumbnail-name']) or {
+			app.set_status(500, '')
+			return app.text('error: failed to upload image')
+		}
+
+		sql app.db {
+			update Article set thumbnail = img_id where id == article_id
+		} or {
+			app.set_status(500, '')
+			return app.text('error: failed to update article')
+		}
+	}
+
 	article_name := app.form['name']
 	article_descr := app.form['description']
 	sql app.db {
-		update Article set name=article_name, description=article_descr where id == article_id
+		update Article set name = article_name, description = article_descr where id == article_id
 	} or {
 		app.set_status(500, '')
 		return app.text('error: failed to update article')
 	}
 	return app.ok('')
+}
+
+// upload_image returns the Image id and the path of the uploaded file
+fn (mut app Api) upload_image(file_key string, img_name string) !(int, string) {
+	img_dir := os.join_path(app.upload_dir, 'img')
+
+	fdata := app.files[file_key][0].data.bytes()
+
+	os.mkdir_all(img_dir)!
+
+	file_path := os.join_path(img_dir, img_name)
+
+	mut f := os.create(file_path)!
+
+	f.write(fdata)!
+
+	f.close()
+
+	upload_path := 'uploads/img/${img_name}'
+
+	img := Image{
+		name: img_name
+		src: upload_path
+	}
+
+	sql app.db {
+		insert img into Image
+	}!
+
+	return app.db.last_id(), upload_path
 }
 
 // 			Blocks
@@ -168,7 +211,7 @@ pub fn (mut app Api) save_blocks() vweb.Result {
 	article_id := app.query['article'].int()
 	sql app.db {
 		update Article set block_data = app.req.data where id == article_id
-		update Article set updated_at=time.now() where id == article_id
+		update Article set updated_at = time.now() where id == article_id
 	} or {
 		app.set_status(500, '')
 		return app.text('error: could not update article')
@@ -248,7 +291,6 @@ pub fn (mut app Api) publish_article() vweb.Result {
 	file := generate(blocks)
 
 	file_path := os.join_path_single(app.pages_dir, '${article_id}.html')
-	println(file_path)
 	mut f := os.create(file_path) or {
 		app.set_status(500, 'file "${file_path}" is not writeable')
 		return app.text('error writing file...')
@@ -267,15 +309,15 @@ pub fn (mut app Api) publish_article() vweb.Result {
 // 			Files
 // ==========================
 
-['/upload-image'; options; post]
-pub fn (mut app Api) upload_image() vweb.Result {
-	return app.ok('uploaded image')
-}
+// ['/upload-image'; options; post]
+// pub fn (mut app Api) upload_image() vweb.Result {
+// 	return app.ok('uploaded image')
+// }
 
-['/upload-image-url'; options; post]
-pub fn (mut app Api) upload_image_url() vweb.Result {
-	return app.ok('uploaded image url')
-}
+// ['/upload-image-url'; options; post]
+// pub fn (mut app Api) upload_image_url() vweb.Result {
+// 	return app.ok('uploaded image url')
+// }
 
 // 			Utility
 // ==========================
@@ -290,4 +332,46 @@ fn must_exist[T](rows []T) ?T {
 
 fn is_empty(key string, form map[string]string) bool {
 	return form[key] == '' || form[key] == 'undefined'
+}
+
+// get all articles
+pub fn get_all_articles(mut db pg.DB) []Article {
+	mut articles := sql db {
+		select from Article order by updated_at desc
+	} or { []Article{} }
+
+	for mut article in articles {
+		if article.thumbnail != 0 {
+			img := get_image(mut db, article.thumbnail) or { Image{} }
+			article.image_src = img.src
+		}
+	}
+	return articles
+}
+
+// get an article by id
+pub fn get_article(mut db pg.DB, article_id int) !Article {
+	mut articles := sql db {
+		select from Article where id == article_id
+	}!
+	if articles.len == 0 {
+		return error('article was not found')
+	}
+
+	if articles[0].thumbnail != 0 {
+		img := get_image(mut db, articles[0].thumbnail) or { Image{} }
+		articles[0].image_src = img.src
+	}
+	return articles[0]
+}
+
+// get image by id
+pub fn get_image(mut db pg.DB, image_id int) !Image {
+	images := sql db {
+		select from Image where id == image_id
+	}!
+	if images.len == 0 {
+		return error('image was not found')
+	}
+	return images[0]
 }

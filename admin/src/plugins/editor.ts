@@ -44,7 +44,7 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
                 class: Paragraph,
                 inlineToolbar: true
             },
-            linkTool: {
+            link: {
                 class: LinkTool,
                 config: {
                     endpoint: urlConf.linkEndpoint

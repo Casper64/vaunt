@@ -6,8 +6,8 @@ export const useBlockStore = defineStore('block', {
     state: () => {
         return {
             blocks: [] as OutputBlockData<string, any>[],
-            names: ['heading', 'paragraph', 'image'],
-            icons: ['h1','text', 'img']
+            names: ['heading', 'paragraph', 'image', 'link', 'quote', 'embed', 'table'],
+            icons: ['h1','text', 'img', 'link', 'quote', 'embed', 'table']
         }
     },
     actions: {

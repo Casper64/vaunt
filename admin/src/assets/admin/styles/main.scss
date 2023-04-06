@@ -122,3 +122,17 @@ nav {
 .edit-button:hover {
     box-shadow: var(--shadow);
 }
+
+/* FormKit styles */
+// button.formkit-input[type="submit"] {
+//     display: block !important;
+//     margin: auto !important;
+// }
+
+.formkit-wrapper {
+    display: grid;
+}
+
+form.formkit-form {
+    width: 100%;
+}

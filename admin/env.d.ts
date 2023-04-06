@@ -13,7 +13,8 @@ interface Article {
     name:  string
     block_data: string
     description: string
-    thumbnail?: string
+    thumbnail: any
+    image_src: string
     created_at: string
     updated_at: string
 }

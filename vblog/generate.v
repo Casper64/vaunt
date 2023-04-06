@@ -22,7 +22,7 @@ fn generate(data string) string {
 			'paragraph' {
 				generate_paragraph(block)
 			}
-			'linkTool' {
+			'link' {
 				generate_link(block)
 			}
 			'image' {
@@ -127,7 +127,7 @@ pub mut:
 
 fn generate_table(block &Block) string {
 	mut data := json.decode(TableData, block.data) or { TableData{} }
-	
+
 	mut table_headers := []string{}
 	if data.with_headings {
 		table_headers = data.content[0]
@@ -135,8 +135,6 @@ fn generate_table(block &Block) string {
 	}
 
 	table_rows := data.content
-	println(table_headers)
-	println(table_rows)
 
 	return $tmpl('./templates/blocks/table.html')
 }

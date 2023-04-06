@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useArticleStore } from '@/stores/article';
-import axios from 'axios';
+import { ref } from 'vue';
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -13,12 +13,17 @@ const articleStore = useArticleStore()
 const article = computed(() => {
     return articleStore.get(props.articleId)!
 })
+const complete = ref(false)
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dev']
 
 const updated_date = computed(() => {
     let date = new Date(article.value.updated_at)
     return `${months[date.getMonth()]} ${date.getDate()}`
+})
+
+const thumbnailSource = computed(() => {
+    return import.meta.env.VITE_BASE_URL+article.value.image_src
 })
 
 async function deletePost() {
@@ -32,12 +37,15 @@ async function deletePost() {
     }
 }
 
-async function publishArticle() {
-    const response = await axios.get(`/publish?article=${article.value.id}`)
-    console.log(response)
-    const url = new URL(import.meta.env.VITE_API_BASE_URL)
-    window.open(url.origin+response.data, '_self')
+async function publishHandler() {
+    try {
+        await articleStore.publish(article.value.id)
+    } catch (err) {}
+    finally {
+        complete.value = true
+    }
 }
+
 
 </script>
 
@@ -50,10 +58,10 @@ async function publishArticle() {
             <div class="category-pill">category</div>
         </div>
         <div class="thumbnail">
-            <img src="https://cdn.utaustinbootcamps.com/wp-content/uploads/sites/119/2020/12/tes_gen_blog_code7-1-800x412.jpg">
+            <img alt="thumbnail" :src="thumbnailSource">
         </div>
         <div class="buttons-container">
-            <FormKit type="button" @click="publishArticle">Publish</FormKit>
+            <FormKit type="button" @click="publishHandler">Publish</FormKit>
             <router-link :to="`/admin/edit/${article.id}`">
                 <FormKit type="button">Edit</FormKit>
             </router-link>
@@ -124,7 +132,7 @@ async function publishArticle() {
 
     img {
         max-width: 100%;
-        max-height: 100%;
+        max-height: 180px;
         // aspect-ratio: ;
     }
 }
