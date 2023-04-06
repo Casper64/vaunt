@@ -25,7 +25,7 @@ async function deletePost() {
     if (window.confirm(`Are you sure you want to delete article "${article.value.name}"?`)) {
         try {
             await articleStore.remove(article.value.id)
-            router.push('/')
+            router.push('/admin')
         } catch (err) {
             console.log(err)
         }
@@ -36,7 +36,7 @@ async function publishArticle() {
     const response = await axios.get(`/publish?article=${article.value.id}`)
     console.log(response)
     const url = new URL(import.meta.env.VITE_API_BASE_URL)
-    window.open(url.origin+response.data, '_blank')
+    window.open(url.origin+response.data, '_self')
 }
 
 </script>
@@ -54,10 +54,10 @@ async function publishArticle() {
         </div>
         <div class="buttons-container">
             <FormKit type="button" @click="publishArticle">Publish</FormKit>
-            <router-link :to="`/edit/${article.id}`">
+            <router-link :to="`/admin/edit/${article.id}`">
                 <FormKit type="button">Edit</FormKit>
             </router-link>
-            <router-link :to="`/settings/${article.id}`">
+            <router-link :to="`/admin/settings/${article.id}`">
                 <FormKit type="button">Settings</FormKit>
             </router-link>
             <FormKit type="button" @click="deletePost">Delete</FormKit>

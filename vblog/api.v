@@ -111,6 +111,29 @@ pub fn (mut app Api) delete_article(article_id int) vweb.Result {
 	return app.ok('deleted article with id ${article_id}')
 }
 
+['/articles/:article_id'; put]
+pub fn (mut app Api) update_article(article_id int) vweb.Result {
+	if article_id == 0 {
+		app.set_status(400, '')
+		return app.text('error: "id" is not a number')
+	}
+
+	if is_empty('name', app.form) || is_empty('description', app.form) {
+		app.set_status(400, '')
+		return app.text('error: field "name" and "description" are required')
+	}
+
+	article_name := app.form['name']
+	article_descr := app.form['description']
+	sql app.db {
+		update Article set name=article_name, description=article_descr where id == article_id
+	} or {
+		app.set_status(500, '')
+		return app.text('error: failed to update article')
+	}
+	return app.ok('')
+}
+
 // 			Blocks
 // ==========================
 

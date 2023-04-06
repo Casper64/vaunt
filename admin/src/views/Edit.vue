@@ -4,7 +4,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import BlocksContainer from '@/components/blocks/BlocksContainer.vue'
 import BlocksPreview from '@/components/blocks/BlocksPreview.vue'
-import BlockEditor from '@/components/blocks/BlockEditor.vue'
+import ArticleEditor from '@/components/blocks/ArticleEditor.vue'
 
 const articleStore = useArticleStore()
 const route = useRoute()
@@ -25,7 +25,7 @@ const article = computed(() => {
         <BlocksPreview/>
         
     </div>
-    <BlockEditor/>
+    <ArticleEditor/>
 </div>
 </template>
 
@@ -33,7 +33,7 @@ const article = computed(() => {
 
 .editor-container {
     display: grid;
-    grid-template-columns: 300px 1fr 300px;
+    grid-template-columns: 300px 1fr max-content;
     height: calc(100vh - 80px);
 }
 

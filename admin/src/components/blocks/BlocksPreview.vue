@@ -16,7 +16,9 @@ const editorChange: EditorConfig['onChange'] = async (api, event) => {
     if (event.type == 'block-added' || event.type == 'block-removed' || event.type == 'block-changed') {
         const output = await editor.value?.save()
         if (output) {
+            output.blocks.splice(0, 0, store.blocks[0])
             store.blocks = output.blocks;
+            console.log(store.blocks)
             await store.save(route.params['id'])
         }
     }
@@ -26,7 +28,7 @@ const editorChange: EditorConfig['onChange'] = async (api, event) => {
 
 onMounted(() => {
     const server = import.meta.env.VITE_API_BASE_URL
-    editor.value = createEditor('editor', store.blocks, {
+    editor.value = createEditor('editor', store.blocks.slice(1), {
         linkEndpoint: server+'fetch-link',
         uploadFile: server+'upload-image',
         uploadUrl: server+'upload-image-url'
@@ -39,7 +41,9 @@ onMounted(() => {
 
 <template>
 <div class="document">
-    <div id="editor"></div>
+    <div id="editor">
+        <h1>{{  store.blocks[0]?.data.text }}</h1>
+    </div>
     <!-- <div class="add-block">
         <FormKit type="button" prefix-icon="add" @click="popup = true">Add Block</FormKit>
     </div> -->
@@ -84,6 +88,11 @@ onMounted(() => {
     border-radius: 10px;
     background-color: white;
     border: 1px solid var(--border-color);
+}
+
+#editor > h1:first-of-type {
+    text-align: center;
+    margin-bottom: 20px;
 }
 
 </style>

@@ -1,5 +1,5 @@
 import axios from '@/plugins/axios'
-import type { Article } from 'env'
+import type { Article, CreateArticle } from 'env'
 import { defineStore } from 'pinia'
 
 export const useArticleStore = defineStore('article', {
@@ -42,6 +42,18 @@ export const useArticleStore = defineStore('article', {
         async remove(id: number) {
             await axios.delete(`/articles/${id}`)
             this.articles = this.articles.filter(a => a.id != id)
+        },
+        async update(id: number, data: CreateArticle) {
+            let currentArticle = this.get(id)
+            if (currentArticle) {
+                const body = new FormData()
+                body.append('name', data.name)
+                body.append('description', data.description)
+                await axios.put(`/articles/${id}`, body)
+                currentArticle.name = data.name
+                return true
+            }
+            return false
         }
     }
 })

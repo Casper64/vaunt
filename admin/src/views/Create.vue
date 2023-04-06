@@ -16,7 +16,7 @@ const submitHandler = async (data: any) => {
 
     try {
         const insertedArticle = await articleStore.create(data)
-        router.push(`/edit/${insertedArticle.id}`)
+        router.push(`/admin/edit/${insertedArticle.id}`)
     } catch (err: any) {
         errorMessage.value = err.response.data
     } finally {

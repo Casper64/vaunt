@@ -11,7 +11,7 @@ const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
         {
-            path: '/',
+            path: '/admin',
             name: 'home',
             component: HomeView,
             async beforeEnter(to, from, next) {
@@ -20,11 +20,11 @@ const router = createRouter({
                 next()
             }
         }, {
-            path: '/create',
+            path: '/admin/create',
             name: 'create',
             component: CreateView
         }, {
-            path: '/edit/:id',
+            path: '/admin/edit/:id',
             name: 'edit',
             component: EditView,
             async beforeEnter(to, from, next) {
@@ -44,10 +44,6 @@ const router = createRouter({
             path: '/:pathMatch(.*)*',
             name: 'NotFound',
             component: View404,
-        }, {
-            path: '/admin',
-            name: 'admin',
-            redirect: '/'
         }
     ]
 })

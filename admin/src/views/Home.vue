@@ -18,8 +18,7 @@ const articleStore = useArticleStore()
                 prefix-icon="search"
             />
         </div>
-        <!-- <router-link to="/create" class="edit-button">Create</router-link> -->
-        <router-link to="/create">
+        <router-link to="/admin/create">
             <FormKit type="button" prefix-icon="add">Create</FormKit>
         </router-link>
     </div>
