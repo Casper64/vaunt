@@ -35,7 +35,7 @@ fn main() {
 pub fn (mut app App) home() vweb.Result {
 	title := 'Home'
 
-	articles := vblog.get_all_articles(mut app.db)
+	articles := vblog.get_all_articles(mut app.db).filter(it.show == true)
 
 	content := $tmpl('./templates/home.html')
 	layout := $tmpl('./templates/layout.html')
@@ -45,6 +45,10 @@ pub fn (mut app App) home() vweb.Result {
 ['/articles/:article_id']
 pub fn (mut app App) article_page(article_id int) vweb.Result {
 	article := vblog.get_article(mut app.db, article_id) or { return app.not_found() }
+	if article.show == false {
+		return app.not_found()
+	}
+
 	title := 'VBlog | ${article.name}'
 
 	content := os.read_file('src/templates/pages/${article_id}.html') or {

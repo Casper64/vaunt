@@ -17,8 +17,9 @@ pub mut:
 	id          int    [primary; sql: serial]
 	name        string [nonull]
 	description string
+	show        bool
 	thumbnail   int
-	image_src   string 
+	image_src   string	// need this in json, but there is no skip_sql yet
 	block_data  string [nonull]
 	created_at  string [default: 'CURRENT_TIMESTAMP'; sql_type: 'TIMESTAMP']
 	updated_at  string [default: 'now()'; sql_type: 'TIMESTAMP']
@@ -30,9 +31,4 @@ pub mut:
 	id   int    [primary; sql: serial]
 	name string [nonull]
 	src  string [nonull]
-}
-
-struct ArticleRequest {
-	name        string
-	description string
 }

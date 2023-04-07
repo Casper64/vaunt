@@ -7,6 +7,10 @@ import View404 from '@/views/404.vue'
 import EditView from '@/views/Edit.vue'
 import {useBlockStore} from '@/stores/blocks'
 
+// In the built app all routes will be after the route `/admin` so we prepend
+// it now in the router. This avoids many headaches in production and this way
+// it is not neceassary to do any fancy path transformation with static assets.
+
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
@@ -31,11 +35,14 @@ const router = createRouter({
                 const articleStore = useArticleStore()
                 await articleStore.fetchData()
                 const article = articleStore.get(to.params['id'])
+
+                // first check if article exists
                 if (article == undefined) {
                     next('/')
                     return
                 }
-
+                
+                // then fetch all blocks which should at least return `[]`
                 const blockStore = useBlockStore()
                 await blockStore.fetchData(article.id)
                 next()

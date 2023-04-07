@@ -16,6 +16,7 @@ const currentBlocks = computed(() => {
 function checkActive() {
     const activeElement = document.querySelector('.ce-block--focused')!
     const parent = activeElement.parentNode!
+    // get index amongst siblings to display a blue border around the focused block
     active.value = Array.prototype.indexOf.call(parent.children, activeElement);
 }
 

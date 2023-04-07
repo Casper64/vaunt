@@ -19,7 +19,7 @@ pub mut:
 	db pg.DB [required; vweb_global]
 }
 
-// simple cors
+// simple cors handler for admin panel dev server, that's also why you see method "options" on some routes
 fn cors(mut ctx vweb.Context) bool {
 	ctx.add_header('Access-Control-Allow-Origin', 'http://127.0.0.1:5173')
 	ctx.add_header('Access-Control-Allow-Credentials', 'true')
@@ -117,12 +117,25 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 		return app.text('error: "id" is not a number')
 	}
 
+	if is_empty('show', app.form) == false {
+		showing := app.form['show']
+		sql app.db {
+			update Article set show = showing where id == article_id
+		} or {
+			app.set_status(400, '')
+			return app.text('error: cannot change visibility')
+		}
+		return app.ok('')
+	}
+
 	if is_empty('name', app.form) || is_empty('description', app.form) {
 		app.set_status(400, '')
 		return app.text('error: field "name" and "description" are required')
 	}
 
 	if 'thumbnail' in app.files && is_empty('thumbnail-name', app.form) == false {
+		// TODO: remove old thumbnail img + plus check if its used elsewhere
+
 		img_id, _ := app.upload_image('thumbnail', app.form['thumbnail-name']) or {
 			app.set_status(500, '')
 			return app.text('error: failed to upload image')
@@ -287,6 +300,15 @@ pub fn (mut app Api) publish_article() vweb.Result {
 	if rows.len == 0 {
 		return app.not_found()
 	}
+
+	// change visibility
+	sql app.db {
+		update Article set show = true where id == article_id
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not update article, please try again later')
+	}
+
 	blocks := rows[0].block_data
 	file := generate(blocks)
 
@@ -309,15 +331,76 @@ pub fn (mut app Api) publish_article() vweb.Result {
 // 			Files
 // ==========================
 
-// ['/upload-image'; options; post]
-// pub fn (mut app Api) upload_image() vweb.Result {
-// 	return app.ok('uploaded image')
-// }
+struct ImageBlockResponse {
+pub mut:
+	success int
+	file    map[string]string
+}
 
-// ['/upload-image-url'; options; post]
-// pub fn (mut app Api) upload_image_url() vweb.Result {
-// 	return app.ok('uploaded image url')
-// }
+['/upload-image'; options; post]
+pub fn (mut app Api) upload_image_endpoint() vweb.Result {
+	// cors
+	if app.req.method == .options {
+		return app.ok('')
+	}
+
+	if 'image' !in app.files {
+		app.set_status(400, '')
+		return app.text('error: field "image" is required in files')
+	}
+	fdata := app.files['image'][0]
+	if fdata.filename == '' {
+		app.set_status(400, '')
+		return app.text('error: must provide an image name')
+	}
+
+	mut response := ImageBlockResponse{}
+
+	_, img_src := app.upload_image('image', fdata.filename) or {
+		response.success = 0
+
+		app.set_status(500, '')
+		return app.json(response)
+	}
+
+	response.success = 1
+	response.file['url'] = img_src
+
+	return app.json(response)
+}
+
+['/delete-image'; options; post]
+pub fn (mut app Api) delete_image_endpoint() vweb.Result {
+	// cors
+	if app.req.method == .options {
+		return app.ok('')
+	}
+
+	if is_empty('image', app.form) {
+		app.set_status(400, '')
+		return app.text('error: field "image" is required')
+	}
+
+	app.delete_image_file(app.form['image']) or {
+		app.set_status(400, '')
+		return app.text(err.msg())
+	}
+	return app.ok('')
+}
+
+fn (mut app Api) delete_image_file(img_name string) ! {
+	file_path := os.join_path(app.upload_dir, 'img', img_name)
+
+	// prevent directory traversal
+	if file_path.starts_with(app.upload_dir) == false {
+		return error('invalid filename')
+	}
+	if os.exists(file_path) {
+		os.rm(file_path)!
+	} else {
+		return error('image "${img_name}" does not exist')
+	}
+}
 
 // 			Utility
 // ==========================

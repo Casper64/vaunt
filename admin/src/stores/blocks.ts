@@ -6,11 +6,14 @@ export const useBlockStore = defineStore('block', {
     state: () => {
         return {
             blocks: [] as OutputBlockData<string, any>[],
+            // map names to icons. To future me: convert this shit into a hashmap
             names: ['heading', 'paragraph', 'image', 'link', 'quote', 'embed', 'table'],
             icons: ['h1','text', 'img', 'link', 'quote', 'embed', 'table']
         }
     },
     actions: {
+        // fetchData returns true when all blocks have been successfully fetched, 
+        // this boolean is used by the router
         async fetchData(article_id: any) {
             try {
                 const response = await axios.get(`/blocks?article=${article_id}`)
@@ -34,7 +37,13 @@ export const useBlockStore = defineStore('block', {
 
             const body = JSON.stringify(blocks)
             const response = await axios.post(`/blocks?article=${article_id}`, body)
-            console.log(response)
+            this.blocks = response.data
+        },
+        async removeImage(src: string) {
+            const body = new FormData()
+            // get only part after the last "/"
+            body.append('image', src.split('/').pop() || '')
+            await axios.post('delete-image', body)
         }
     }
 })

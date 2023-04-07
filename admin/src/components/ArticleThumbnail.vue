@@ -4,19 +4,20 @@ import { ref } from 'vue';
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 
-const router = useRouter()
-
 const props = defineProps<{
     articleId: number
 }>()
+
 const articleStore = useArticleStore()
+const router = useRouter()
+
+const complete = ref(false)
+
 const article = computed(() => {
     return articleStore.get(props.articleId)!
 })
-const complete = ref(false)
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dev']
-
 const updated_date = computed(() => {
     let date = new Date(article.value.updated_at)
     return `${months[date.getMonth()]} ${date.getDate()}`

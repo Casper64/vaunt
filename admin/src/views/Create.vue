@@ -3,7 +3,6 @@ import { ref } from 'vue'
 import { FormKit } from '@formkit/vue'
 import { useRouter } from 'vue-router';
 import { useArticleStore } from '@/stores/article';
-import { useBlockStore } from '@/stores/blocks';
 
 const articleStore = useArticleStore()
 const router = useRouter()
@@ -30,13 +29,38 @@ const submitHandler = async (data: any) => {
     <div class="create-article">
         <h1>Create Article</h1>
         <!-- 25em is the default max width of FormKit -->
-        <FormKit type="form" style="width: 25em;" @submit="submitHandler">
-            <FormKit type="text" name="name" id="name" validation="required" label="Name" placeholder="Article Name" />
-            <FormKit type="textarea" rows="10" name="description" id="description" validation="required" label="Description"
-                value="Short article description..." />
-                <FormKit type="file" accept=".png, .jpg, .jpeg" file-item-icon="fileImage" no-files-icon="fileImage"
-                label="Thumbnail" name="thumbnail" help="Add a thumnbnail image" />
-            <p v-if="errorMessage" class="error">{{ errorMessage  }}</p>
+        <FormKit 
+            type="form"
+            style="width: 25em;"
+            @submit="submitHandler"
+        >
+            <FormKit 
+                type="text" 
+                name="name" 
+                id="name" 
+                validation="required"
+                label="Name" 
+                placeholder="Article Name" 
+            />
+            <FormKit 
+                type="textarea" 
+                rows="10" 
+                name="description" 
+                id="description" 
+                validation="required" 
+                label="Description"
+                value="Short article description..." 
+            />
+            <FormKit 
+                type="file" 
+                accept=".png, .jpg, .jpeg" 
+                file-item-icon="fileImage" 
+                no-files-icon="fileImage"
+                label="Thumbnail" 
+                name="thumbnail" 
+                help="Add a thumnbnail image"
+                />
+            <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
         </FormKit>
     </div>
 </template>

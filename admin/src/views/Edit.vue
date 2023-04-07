@@ -1,17 +1,7 @@
 <script setup lang="ts">
-import { useArticleStore } from '@/stores/article';
-import { computed } from 'vue';
-import { useRoute } from 'vue-router';
 import BlocksContainer from '@/components/blocks/BlocksContainer.vue'
 import BlocksPreview from '@/components/blocks/BlocksPreview.vue'
 import ArticleEditor from '@/components/blocks/ArticleEditor.vue'
-
-const articleStore = useArticleStore()
-const route = useRoute()
-
-const article = computed(() => {
-    return articleStore.get(route.params.id)!
-})
 
 </script>
 

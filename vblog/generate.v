@@ -86,10 +86,13 @@ struct ImageData {
 pub:
 	url     string
 	caption string
+	file    map[string]string
 }
 
 fn generate_image(block &Block) string {
 	data := json.decode(ImageData, block.data) or { ImageData{} }
+	url := data.file['url']
+	img_alt := if data.caption != '' { '[${data.caption}]' } else { '[image]' }
 	return $tmpl('./templates/blocks/img.html')
 }
 

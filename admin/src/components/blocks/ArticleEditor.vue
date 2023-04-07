@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useArticleStore } from '@/stores/article';
 import { useBlockStore } from '@/stores/blocks';
+import { zh } from '@formkit/i18n';
 import type { CreateArticle } from 'env';
 import { computed } from 'vue';
-import { watch } from 'vue';
 import { ref } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -15,23 +15,27 @@ const article = computed(() => {
     return store.get(route.params['id'])!
 })
 
+const showStatus = ref(article.value.show ? 'Hide Article' : 'Show Article')
+
 async function submitHandler(data: CreateArticle) {
     try {
         let success = await store.update(article.value.id, data)
         let new_article = store.get(article.value.id)!
         if (new_article.image_src) {
-            console.log(new_article.image_src)
+            // hardcoded for reactivity
             thumbnailSource.value = import.meta.env.VITE_BASE_URL+new_article.image_src
         }
 
         if (success) {
             const blockStore = useBlockStore()
+            
+            // first block will never be changed since it contains the article name
+            // so now we need to change it
             blockStore.blocks[0].data.text = data.name
             await blockStore.save(article.value.id)
         }
-    } catch (err) {
-        console.log(err)
-    } finally {
+    } catch (err) {}
+    finally {
         complete.value = false
     }
 }
@@ -39,6 +43,18 @@ async function submitHandler(data: CreateArticle) {
 async function publishHandler() {
     try {
         await store.publish(article.value.id)
+        showStatus.value = 'Hide Article'
+    } catch (err) {}
+    finally {
+        complete.value = true
+    }
+}
+
+async function changeVisibility() {
+    try {
+        await store.changeVisibility(article.value.id)
+        // hardcoded for reactivity
+        showStatus.value = showStatus.value == 'Show Article' ? 'Hide Article' : 'Show Article'
     } catch (err) {}
     finally {
         complete.value = true
@@ -67,10 +83,9 @@ const thumbnailSource = ref(import.meta.env.VITE_BASE_URL+article.value.image_sr
         label="New thumbnail" name="thumbnail" help="Add a thumnbnail image"/>
     </FormKit>
     <hr>
-    <h1>Publish Article</h1>
-    <FormKit type="form" @submit="publishHandler" submit-label="Publish">
-
-    </FormKit>
+    <h1>Visibility</h1>
+    <FormKit type="form" @submit="changeVisibility" :submit-label="showStatus"></FormKit> 
+    <FormKit type="form" @submit="publishHandler" submit-label="Publish"></FormKit> 
 </div>
 </template>
 
