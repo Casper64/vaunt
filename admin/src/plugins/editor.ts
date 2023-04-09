@@ -28,9 +28,6 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
         },
         holder: id,
         tools: {
-            code: {
-                class: CodeBlock
-            },
             colors: {
                 class: ColorPlugin,
                 config: {
@@ -41,7 +38,7 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
             heading: {
                 class: Header,
                 config: {
-                    defaultLevel: 1,
+                    defaultLevel: 2,
                     levels: [1,2,3]
                 }
             },
@@ -49,27 +46,10 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
                 class: Paragraph,
                 inlineToolbar: true
             },
-            link: {
+            linkTool: {
                 class: LinkTool,
                 config: {
                     endpoint: urlConf.linkEndpoint
-                }
-            },
-            // TODO: lists will nest in a JSON structure, will enable lists when V
-            // supports recursive structs.
-            // list: {
-            //     class: NestedList,
-            //     inlineToolbar: true,
-            //     config: {
-            //         defaultStyle : 'ordered'
-            //     }
-            // },
-            quote: {
-                class: Quote,
-                inlineToolbar: true,
-                config: {
-                    quotePlaceholder : 'Enter a quote',
-                    captionPlaceholder : 'Quote\'s author'
                 }
             },
             image: {
@@ -79,6 +59,10 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
                         async uploadByFile(file: any) {
                             const body = new FormData()
                             body.append('image', file)
+
+                            // assume this function is only called in the editor so route.params['id'] should always be defined
+                            body.append('article', window.location.pathname.split('/').pop())
+
                             const resp = await axios.post(urlConf.uploadFile, body)
                             
                             // transform img url data: endpoint will only return `uploads/img/<img_path>`
@@ -98,6 +82,26 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
                     }
                 }
             },
+            // TODO: lists will nest in a JSON structure, will enable lists when V
+            // supports recursive structs.
+            // list: {
+            //     class: NestedList,
+            //     inlineToolbar: true,
+            //     config: {
+            //         defaultStyle : 'ordered'
+            //     }
+            // },
+            code: {
+                class: CodeBlock
+            },
+            quote: {
+                class: Quote,
+                inlineToolbar: true,
+                config: {
+                    quotePlaceholder : 'Enter a quote',
+                    captionPlaceholder : 'Quote\'s author'
+                }
+            },
             table: {
                 class: Table,
                 inlineToolbar: true,
@@ -105,10 +109,10 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
                     withHeadings: true
                 }
             },
-            mermaid: MermaidTool,
             embed: {
                 class: Embed
             }
+            // mermaid: MermaidTool,
         },
         //@ts-ignore
         logLevel: 'ERROR',

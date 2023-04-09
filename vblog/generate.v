@@ -23,7 +23,7 @@ fn generate(data string) string {
 			'paragraph' {
 				generate_paragraph(block)
 			}
-			'link' {
+			'linkTool' {
 				generate_link(block)
 			}
 			'image' {
@@ -88,7 +88,6 @@ fn generate_link(block &Block) string {
 
 struct ImageData {
 pub:
-	url     string
 	caption string
 	file    map[string]string
 }

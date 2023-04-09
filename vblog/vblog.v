@@ -12,6 +12,21 @@ pub fn init(db &pg.DB, pages_dir string, upload_dir string) ![]&vweb.ControllerP
 	init_database(db)!
 	
 	vblog_dir := os.dir(@FILE)
+	// mut upload_dir := _upload_dir
+	// // add trailing '/' after upload dir for compatibility
+	// $if windows {
+	// 	if _upload_dir.ends_with('/') == false && _upload_dir.ends_with('\\') == false {
+	// 		upload_dir += '/'
+	// 	} else if _upload_dir.ends_with('\\') {
+	// 		upload_dir.last() = '/'
+	// 	}
+	// } $else {
+	// 	if _upload_dir.ends_with('/') == false {
+	// 		upload_dir += '/'
+	// 	}
+	// }
+	println(upload_dir)
+	
 
 	// Upload App
 	mut upload_app := &Upload{
@@ -67,6 +82,7 @@ pub mut:
 	current_path string [vweb_global]
 }
 
+// handle static image uploads
 ['/img/:img_path'; get]
 pub fn (mut app Upload) get_image(img_path string) vweb.Result {
 	file_path := os.join_path(app.upload_dir, 'img', img_path)

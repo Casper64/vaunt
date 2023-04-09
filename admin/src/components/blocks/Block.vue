@@ -18,7 +18,13 @@ const icon = computed(() => {
     return `/admin/svg/${store.icons[blockIndex]}.svg`
 })
 
-const name = computed(() => capitalize(props.block.type))
+const name = computed(() => {
+    let name = capitalize(props.block.type)
+    if (name == 'LinkTool') {
+        name = 'Link'
+    }
+    return name
+})
 
 </script>
 

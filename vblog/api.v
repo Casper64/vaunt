@@ -3,9 +3,11 @@ module vblog
 import vweb
 import db.pg
 import net.http
+import net.urllib
 import net.html
 import os
 import time
+import json
 
 pub struct Api {
 	vweb.Context
@@ -69,7 +71,7 @@ pub fn (mut app Api) create_article() vweb.Result {
 	mut article := rows[0] as Article
 
 	if 'thumbnail' in app.files && is_empty('thumbnail-name', app.form) == false {
-		img_id, img_src := app.upload_image('thumbnail', app.form['thumbnail-name']) or {
+		img_id, img_src := app.upload_image(article.id, 'thumbnail', app.form['thumbnail-name']) or {
 			app.set_status(500, '')
 			return app.text('error: failed to upload image')
 		}
@@ -98,6 +100,29 @@ pub fn (mut app Api) delete_article(article_id int) vweb.Result {
 	if article_id == 0 {
 		app.set_status(400, '')
 		return app.text('error: "id" is not a number')
+	}
+	// TODO: make DRY
+
+	// remove all images used in that article
+	img_blocks := app.get_all_image_blocks(article_id) or { []Block{} }
+	mut img_urls := img_blocks.map(fn (block Block) string {
+		img_data := json.decode(ImageData, block.data) or { ImageData{} }
+		url := urllib.parse(img_data.file['url']) or { urllib.URL{} }
+		return url.path[1..]
+	})
+
+	// get img of article
+	article := get_article(mut app.db, article_id) or { return app.not_found() }
+	img_rows := sql app.db {
+		select from Image where id == article.thumbnail
+	} or { []Image{} }
+	if img_rows.len != 0 {
+		img_urls << img_rows[0].src
+	}
+
+	for url in img_urls {
+		file_path := os.join_path(app.upload_dir, 'img', os.base(url))
+		app.delete_image_file(article_id, file_path) or { }
 	}
 
 	sql app.db {
@@ -136,7 +161,7 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 	if 'thumbnail' in app.files && is_empty('thumbnail-name', app.form) == false {
 		// TODO: remove old thumbnail img + plus check if its used elsewhere
 
-		img_id, _ := app.upload_image('thumbnail', app.form['thumbnail-name']) or {
+		img_id, _ := app.upload_image(article_id, 'thumbnail', app.form['thumbnail-name']) or {
 			app.set_status(500, '')
 			return app.text('error: failed to upload image')
 		}
@@ -160,8 +185,11 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 	return app.ok('')
 }
 
+// 			Images
+// ==========================
+
 // upload_image returns the Image id and the path of the uploaded file
-fn (mut app Api) upload_image(file_key string, img_name string) !(int, string) {
+fn (mut app Api) upload_image(article_id int, file_key string, img_name string) !(int, string) {
 	img_dir := os.join_path(app.upload_dir, 'img')
 
 	fdata := app.files[file_key][0].data.bytes()
@@ -181,6 +209,7 @@ fn (mut app Api) upload_image(file_key string, img_name string) !(int, string) {
 	img := Image{
 		name: img_name
 		src: upload_path
+		article_id: article_id
 	}
 
 	sql app.db {
@@ -188,6 +217,15 @@ fn (mut app Api) upload_image(file_key string, img_name string) !(int, string) {
 	}!
 
 	return app.db.last_id(), upload_path
+}
+
+fn (mut app Api) get_all_image_blocks(article_id int) ![]Block {
+	article := sql app.db {
+		select from Article where id == article_id
+	}![0]
+
+	blocks := json.decode([]Block, article.block_data)!
+	return blocks.filter(it.block_type == 'image')
 }
 
 // 			Blocks
@@ -344,10 +382,17 @@ pub fn (mut app Api) upload_image_endpoint() vweb.Result {
 		return app.ok('')
 	}
 
+	if is_empty('article', app.form) {
+		app.set_status(400, '')
+		return app.text('error: field "article" is required')
+	}
+	article_id := app.form['article'].int()
+
 	if 'image' !in app.files {
 		app.set_status(400, '')
 		return app.text('error: field "image" is required in files')
 	}
+
 	fdata := app.files['image'][0]
 	if fdata.filename == '' {
 		app.set_status(400, '')
@@ -356,7 +401,7 @@ pub fn (mut app Api) upload_image_endpoint() vweb.Result {
 
 	mut response := ImageBlockResponse{}
 
-	_, img_src := app.upload_image('image', fdata.filename) or {
+	_, img_src := app.upload_image(article_id, 'image', fdata.filename) or {
 		response.success = 0
 
 		app.set_status(500, '')
@@ -376,20 +421,39 @@ pub fn (mut app Api) delete_image_endpoint() vweb.Result {
 		return app.ok('')
 	}
 
-	if is_empty('image', app.form) {
+	if is_empty('image', app.form) || is_empty('article', app.form) {
 		app.set_status(400, '')
-		return app.text('error: field "image" is required')
+		return app.text('error: fields "image" and "article" are required')
 	}
 
-	app.delete_image_file(app.form['image']) or {
-		app.set_status(400, '')
+	article_id := app.form['article'].int()
+	file_path := os.join_path(app.upload_dir, 'img', app.form['image'])
+
+	app.delete_image_file(article_id, file_path) or {
+		app.set_status(500, '')
 		return app.text(err.msg())
 	}
 	return app.ok('')
 }
 
-fn (mut app Api) delete_image_file(img_name string) ! {
-	file_path := os.join_path(app.upload_dir, 'img', img_name)
+fn (mut app Api) delete_image_file(article_id int, file_path string) ! {
+	img_url := os.join_path(os.base(app.upload_dir), 'img', os.base(file_path))
+
+	// ignore for now, won't affect anyting if this stays in the database
+	sql app.db {
+		delete from Image where src == img_url && article_id == article_id
+	} or {}
+
+	// check if the image has any references outside of the article
+	// TODO: fix the case where an article has two times the same image
+	references := sql app.db {
+		select count from Image where src == img_url && article_id != article_id
+	} or { 0 }
+
+	if references > 0 {
+		return
+	}
+	// no other references to the image so we can safely delete it
 
 	// prevent directory traversal
 	if file_path.starts_with(app.upload_dir) == false {
@@ -398,7 +462,7 @@ fn (mut app Api) delete_image_file(img_name string) ! {
 	if os.exists(file_path) {
 		os.rm(file_path)!
 	} else {
-		return error('image "${img_name}" does not exist')
+		return error('image "${file_path}" does not exist')
 	}
 }
 

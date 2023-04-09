@@ -19,7 +19,7 @@ pub mut:
 	description string
 	show        bool
 	thumbnail   int
-	image_src   string	// need this in json, but there is no skip_sql yet
+	image_src   string // need this in json, but there is no skip_sql yet
 	block_data  string [nonull]
 	created_at  string [default: 'CURRENT_TIMESTAMP'; sql_type: 'TIMESTAMP']
 	updated_at  string [default: 'now()'; sql_type: 'TIMESTAMP']
@@ -28,7 +28,8 @@ pub mut:
 [table: 'images']
 pub struct Image {
 pub mut:
-	id   int    [primary; sql: serial]
-	name string [nonull]
-	src  string [nonull]
+	id         int    [primary; sql: serial]
+	name       string [nonull]
+	src        string [nonull]
+	article_id int    [nonull]
 }

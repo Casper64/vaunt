@@ -7,7 +7,7 @@ export const useBlockStore = defineStore('block', {
         return {
             blocks: [] as OutputBlockData<string, any>[],
             // map names to icons. To future me: convert this shit into a hashmap
-            names: ['heading', 'paragraph', 'image', 'link', 'quote', 'embed', 'table', 'code'],
+            names: ['heading', 'paragraph', 'image', 'linkTool', 'quote', 'embed', 'table', 'code'],
             icons: ['h1','text', 'img', 'link', 'quote', 'embed', 'table', 'code']
         }
     },
@@ -42,6 +42,9 @@ export const useBlockStore = defineStore('block', {
             const body = new FormData()
             // get only part after the last "/"
             body.append('image', src.split('/').pop() || '')
+
+            body.append('article', window.location.pathname.split('/').pop()!)
+
             await axios.post('delete-image', body)
         }
     }

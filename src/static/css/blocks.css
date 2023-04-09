@@ -9,6 +9,11 @@ h1 {
     text-align: center;
 }
 
+p a {
+    color: #486581;
+    text-decoration: underline;
+}
+
 .table {
     position: relative;
     display: grid;
@@ -97,7 +102,7 @@ h1 {
 .quote-block blockquote {
     border-left: 8px solid #68a1d1;
     padding: 10px 0px 10px 30px;
-    background-color: var(--light);
+    background-color: #F6F9FC;
     font-weight: 300;
     font-size: 32px;
     margin: 0;
