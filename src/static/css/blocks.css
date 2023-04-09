@@ -2,6 +2,7 @@
 main {
     max-width: 800px;
     margin: auto;
+    padding-bottom: 50px;
 }
 
 h1 {
@@ -102,7 +103,7 @@ h1 {
     margin: 0;
 }
 
-.quote-block .quote-caption, .img-block .img-caption, .embed-block .embed-caption {
+.quote-block .quote-caption, .img-block .img-caption, .embed-block .embed-caption, .code-block .language-name {
     padding-left: 5px;
     color: #3b3b3b;   
     font-size: 14px;  
@@ -129,4 +130,8 @@ h1 {
 .embed-block iframe {
     width: 100%;
     aspect-ratio: 16/9;
+}
+
+.code-block {
+    margin: 2em auto;
 }

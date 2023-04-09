@@ -7,8 +7,8 @@ export const useBlockStore = defineStore('block', {
         return {
             blocks: [] as OutputBlockData<string, any>[],
             // map names to icons. To future me: convert this shit into a hashmap
-            names: ['heading', 'paragraph', 'image', 'link', 'quote', 'embed', 'table'],
-            icons: ['h1','text', 'img', 'link', 'quote', 'embed', 'table']
+            names: ['heading', 'paragraph', 'image', 'link', 'quote', 'embed', 'table', 'code'],
+            icons: ['h1','text', 'img', 'link', 'quote', 'embed', 'table', 'code']
         }
     },
     actions: {
@@ -36,8 +36,7 @@ export const useBlockStore = defineStore('block', {
             }
 
             const body = JSON.stringify(blocks)
-            const response = await axios.post(`/blocks?article=${article_id}`, body)
-            this.blocks = response.data
+            await axios.post(`/blocks?article=${article_id}`, body)
         },
         async removeImage(src: string) {
             const body = new FormData()

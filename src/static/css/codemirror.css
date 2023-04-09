@@ -1,0 +1,109 @@
+.ͼ1.cm-focused {outline: 1px dotted #212121;}
+.ͼ1 {position: relative !important; box-sizing: border-box; display: flex !important; flex-direction: column;}
+.ͼ1 .cm-scroller {display: flex !important; align-items: flex-start !important; font-family: monospace; line-height: 1.4; height: 100%; overflow-x: auto; position: relative; z-index: 0;}
+.ͼ1 .cm-content[contenteditable=true] {-webkit-user-modify: read-write-plaintext-only;}
+.ͼ1 .cm-content {margin: 0; flex-grow: 2; flex-shrink: 0; display: block; white-space: pre; word-wrap: normal; box-sizing: border-box; padding: 4px 0; outline: none;}
+.ͼ1 .cm-lineWrapping {white-space: pre-wrap; white-space: break-spaces; word-break: break-word; overflow-wrap: anywhere; flex-shrink: 1;}
+.ͼ2 .cm-content {caret-color: black;}
+.ͼ3 .cm-content {caret-color: white;}
+.ͼ1 .cm-line {display: block; padding: 0 2px 0 6px;}
+.ͼ1 .cm-layer > * {position: absolute;}
+.ͼ1 .cm-layer {position: absolute; left: 0; top: 0; contain: size style;}
+.ͼ2 .cm-selectionBackground {background: #d9d9d9;}
+.ͼ3 .cm-selectionBackground {background: #222;}
+.ͼ2.cm-focused .cm-selectionBackground {background: #d7d4f0;}
+.ͼ3.cm-focused .cm-selectionBackground {background: #233;}
+.ͼ1 .cm-cursorLayer {pointer-events: none;}
+.ͼ1.cm-focused .cm-cursorLayer {animation: steps(1) cm-blink 1.2s infinite;}
+@keyframes cm-blink {50% {opacity: 0;}}
+@keyframes cm-blink2 {50% {opacity: 0;}}
+.ͼ1 .cm-cursor, .ͼ1 .cm-dropCursor {border-left: 1.2px solid black; margin-left: -0.6px; pointer-events: none;}
+.ͼ1 .cm-cursor {display: none;}
+.ͼ3 .cm-cursor {border-left-color: #444;}
+.ͼ1 .cm-dropCursor {position: absolute;}
+.ͼ1.cm-focused .cm-cursor {display: block;}
+.ͼ2 .cm-specialChar {color: red;}
+.ͼ3 .cm-specialChar {color: #f78;}
+.ͼ1 .cm-gutters {flex-shrink: 0; display: flex; height: 100%; box-sizing: border-box; left: 0; z-index: 200;}
+.ͼ2 .cm-gutters {background-color: #f5f5f5; color: #6c6c6c; border-right: 1px solid #ddd;}
+.ͼ3 .cm-gutters {background-color: #333338; color: #ccc;}
+.ͼ1 .cm-gutter {display: flex !important; flex-direction: column; flex-shrink: 0; box-sizing: border-box; min-height: 100%; overflow: hidden;}
+.ͼ1 .cm-gutterElement {box-sizing: border-box;}
+.ͼ1 .cm-lineNumbers .cm-gutterElement {padding: 0 3px 0 5px; min-width: 20px; text-align: right; white-space: nowrap;}
+.ͼ1 .cm-panels {box-sizing: border-box; position: sticky; left: 0; right: 0;}
+.ͼ2 .cm-panels {background-color: #f5f5f5; color: black;}
+.ͼ2 .cm-panels-top {border-bottom: 1px solid #ddd;}
+.ͼ2 .cm-panels-bottom {border-top: 1px solid #ddd;}
+.ͼ3 .cm-panels {background-color: #333338; color: white;}
+.ͼ1 .cm-tab {display: inline-block; overflow: hidden; vertical-align: bottom;}
+.ͼ1 .cm-widgetBuffer {vertical-align: text-top; height: 1em; width: 0; display: inline;}
+.ͼ1 .cm-placeholder {color: #888; display: inline-block; vertical-align: top;}
+.ͼ1 .cm-highlightSpace:before {content: attr(data-display); position: absolute; pointer-events: none; color: #888;}
+.ͼ1 .cm-highlightTab {background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="20"><path stroke="%23888" stroke-width="1" fill="none" d="M1 10H196L190 5M190 15L196 10M197 4L197 16"/></svg>'); background-size: auto 100%; background-position: right 90%; background-repeat: no-repeat;}
+.ͼ1 .cm-trailingSpace {background-color: #ff332255;}
+.ͼ1 .cm-button {vertical-align: middle; color: inherit; font-size: 70%; padding: .2em 1em; border-radius: 1px;}
+.ͼ2 .cm-button:active {background-image: linear-gradient(#b4b4b4, #d0d3d6);}
+.ͼ2 .cm-button {background-image: linear-gradient(#eff1f5, #d9d9df); border: 1px solid #888;}
+.ͼ3 .cm-button:active {background-image: linear-gradient(#111, #333);}
+.ͼ3 .cm-button {background-image: linear-gradient(#393939, #111); border: 1px solid #888;}
+.ͼ1 .cm-textfield {vertical-align: middle; color: inherit; font-size: 70%; border: 1px solid silver; padding: .2em .5em;}
+.ͼ2 .cm-textfield {background-color: white;}
+.ͼ3 .cm-textfield {border: 1px solid #555; background-color: inherit;}
+.ͼ1.cm-focused .cm-matchingBracket {background-color: #328c8252;}
+.ͼ1.cm-focused .cm-nonmatchingBracket {background-color: #bb555544;}
+.ͼo {color: #c678dd;}
+.ͼp {color: #e06c75;}
+.ͼq {color: #61afef;}
+.ͼr {color: #d19a66;}
+.ͼs {color: #abb2bf;}
+.ͼt {color: #e5c07b;}
+.ͼu {color: #56b6c2;}
+.ͼv {color: #7d8799;}
+.ͼw {font-weight: bold;}
+.ͼx {font-style: italic;}
+.ͼy {text-decoration: line-through;}
+.ͼz {color: #7d8799; text-decoration: underline;}
+.ͼ10 {font-weight: bold; color: #e06c75;}
+.ͼ11 {color: #d19a66;}
+.ͼ12 {color: #98c379;}
+.ͼ13 {color: #ffffff;}
+.ͼn {color: #abb2bf; background-color: #282c34;}
+.ͼn .cm-content {caret-color: #528bff;}
+.ͼn .cm-cursor, .ͼn .cm-dropCursor {border-left-color: #528bff;}
+.ͼn.cm-focused .cm-selectionBackground, .ͼn .cm-selectionBackground, .ͼn .cm-content ::selection {background-color: #3E4451;}
+.ͼn .cm-panels {background-color: #21252b; color: #abb2bf;}
+.ͼn .cm-panels.cm-panels-top {border-bottom: 2px solid black;}
+.ͼn .cm-panels.cm-panels-bottom {border-top: 2px solid black;}
+.ͼn .cm-searchMatch {background-color: #72a1ff59; outline: 1px solid #457dff;}
+.ͼn .cm-searchMatch.cm-searchMatch-selected {background-color: #6199ff2f;}
+.ͼn .cm-selectionMatch {background-color: #aafe661a;}
+.ͼn.cm-focused .cm-matchingBracket, .ͼn.cm-focused .cm-nonmatchingBracket {background-color: #bad0f847;}
+.ͼn .cm-gutters {background-color: #282c34; color: #7d8799; border: none;}
+.ͼn .cm-foldPlaceholder {background-color: transparent; border: none; color: #ddd;}
+.ͼn .cm-tooltip {border: none; background-color: #353a42;}
+.ͼn .cm-tooltip .cm-tooltip-arrow:before {border-top-color: transparent; border-bottom-color: transparent;}
+.ͼn .cm-tooltip .cm-tooltip-arrow:after {border-top-color: #353a42; border-bottom-color: #353a42;}
+.ͼn .cm-tooltip-autocomplete > ul > li[aria-selected] {background-color: #2c313a; color: #abb2bf;}
+.ͼ4 {color: #404740;}
+.ͼ5 {text-decoration: underline;}
+.ͼ6 {text-decoration: underline; font-weight: bold;}
+.ͼ7 {font-style: italic;}
+.ͼ8 {font-weight: bold;}
+.ͼ9 {text-decoration: line-through;}
+.ͼa {color: #708;}
+.ͼb {color: #219;}
+.ͼc {color: #164;}
+.ͼd {color: #a11;}
+.ͼe {color: #e40;}
+.ͼf {color: #00f;}
+.ͼg {color: #30a;}
+.ͼh {color: #085;}
+.ͼi {color: #167;}
+.ͼj {color: #256;}
+.ͼk {color: #00c;}
+.ͼl {color: #940;}
+.ͼm {color: #f00;}
+
+
+/* .cm-gutters { min-height: unset !important; }
+.cm-content :last-child { height: 0px !important; } */

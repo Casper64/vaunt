@@ -10,13 +10,15 @@ const (
 
 pub fn init(db &pg.DB, pages_dir string, upload_dir string) ![]&vweb.ControllerPath {
 	init_database(db)!
+	
+	vblog_dir := os.dir(@FILE)
 
 	// Upload App
 	mut upload_app := &Upload{
 		db: db
 		upload_dir: upload_dir
 	}
-	// cache all files already in the uploads dir
+	// cache paths of all files already in the uploads dir
 	upload_app.handle_static(upload_dir, true)
 
 	// Admin app
@@ -24,7 +26,7 @@ pub fn init(db &pg.DB, pages_dir string, upload_dir string) ![]&vweb.ControllerP
 		db: db
 	}
 
-	dist_path := os.real_path('${os.getwd()}/dist')
+	dist_path := os.join_path(vblog_dir, 'admin')
 
 	admin_app.mount_static_folder_at('${dist_path}/admin', '/')
 	admin_app.serve_static('/index.html', '${dist_path}/index.html')
@@ -55,19 +57,6 @@ fn (mut app Admin) index() vweb.Result {
 	}
 
 	return app.not_found()
-}
-
-fn ceate_admin_app(db pg.DB) &Admin {
-	mut app := &Admin{
-		db: db
-	}
-
-	dist_path := os.real_path('${os.getwd()}/dist')
-
-	app.mount_static_folder_at('${dist_path}/admin', '/')
-	app.serve_static('/index.html', '${dist_path}/index.html')
-
-	return app
 }
 
 pub struct Upload {

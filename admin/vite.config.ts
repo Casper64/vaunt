@@ -12,15 +12,9 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: '../dist',
-    // assetsDir: 'admin'
+    outDir: '../vblog/admin',
     assetsDir: 'admin/assets',
     copyPublicDir: true,
-    // rollupOptions: {
-    //   output: {
-    //     assetFileNames: 'admin/assets/[name]-[hash][extname]',
-    //     entryFileNames: 'admin/assets/[name].js',
-    //   },
-    // }
+    emptyOutDir: true
   },
 })

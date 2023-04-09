@@ -4,9 +4,10 @@ import json
 import net.urllib
 
 struct Block {
+	data       string
+pub:
 	id         string
 	block_type string [json: 'type']
-	data       string
 }
 
 fn generate(data string) string {
@@ -36,6 +37,9 @@ fn generate(data string) string {
 			}
 			'table' {
 				generate_table(block)
+			}
+			'code' {
+				generate_code(block)
 			}
 			else {
 				''
@@ -140,4 +144,17 @@ fn generate_table(block &Block) string {
 	table_rows := data.content
 
 	return $tmpl('./templates/blocks/table.html')
+}
+
+struct CodeData {
+	code string
+pub:
+	language string
+	html string
+}
+
+fn generate_code(block &Block) string {
+	mut data := json.decode(CodeData, block.data) or { CodeData{} }
+
+	return $tmpl('./templates/blocks/code.html')
 }

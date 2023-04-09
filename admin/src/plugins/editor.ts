@@ -12,6 +12,7 @@ import Header from '@editorjs/header'
 import Table from '@editorjs/table'
 import DragDrop from 'editorjs-drag-drop'
 import ColorPlugin from 'editorjs-text-color-plugin'
+import CodeBlock from '@/plugins/tools/code'
 
 // pass endpoint strings
 interface EditorUrlConfig {
@@ -27,6 +28,9 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
         },
         holder: id,
         tools: {
+            code: {
+                class: CodeBlock
+            },
             colors: {
                 class: ColorPlugin,
                 config: {
