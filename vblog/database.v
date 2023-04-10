@@ -3,7 +3,7 @@ module vblog
 import db.pg
 
 fn init_database(db &pg.DB) ! {
-	println('[Vblog] Starting db...')
+	println('[V Blog] Starting db...')
 
 	sql db {
 		create table Article

@@ -14,8 +14,13 @@ const (
 struct App {
 	vweb.Context
 	vweb.Controller
+pub:
+	pages_dir  string
+	upload_dir string
 pub mut:
-	db pg.DB [vweb_global]
+	db     pg.DB  [vweb_global]
+	dev    bool   [vweb_global]
+	s_html string
 }
 
 fn main() {
@@ -23,12 +28,14 @@ fn main() {
 	controllers := vblog.init(db, pages_dir, upload_dir)!
 
 	mut app := &App{
+		pages_dir: pages_dir
+		upload_dir: upload_dir
 		db: db
 		controllers: controllers
 	}
 
 	app.handle_static('src/static', true)
-	vweb.run_at(app, port: 8080, family: .ip, nr_workers: 1)!
+	vblog.start(mut app, 8080)!
 }
 
 ['/']
@@ -39,6 +46,7 @@ pub fn (mut app App) home() vweb.Result {
 
 	content := $tmpl('./templates/home.html')
 	layout := $tmpl('./templates/layout.html')
+	app.s_html = layout
 	return app.html(layout)
 }
 
@@ -56,6 +64,7 @@ pub fn (mut app App) article_page(article_id int) vweb.Result {
 		return app.not_found()
 	}
 	layout := $tmpl('./templates/layout.html')
+	app.s_html = layout
 	return app.html(layout)
 }
 

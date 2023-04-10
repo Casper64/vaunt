@@ -3,6 +3,10 @@ module vblog
 import json
 import net.urllib
 
+
+// 			Generate Block Html
+// =======================================
+
 struct Block {
 	data       string
 pub:
@@ -94,7 +98,14 @@ pub:
 
 fn generate_image(block &Block) string {
 	data := json.decode(ImageData, block.data) or { ImageData{} }
-	url := data.file['url']
+
+	mut url := data.file['url']
+	// check if image is local or not
+	if url.starts_with('http://127.0.0.1') || url.starts_with('http://localhost') {
+		url_s := urllib.parse(data.file['url']) or { urllib.URL{} }
+		url = url_s.path
+	}
+
 	img_alt := if data.caption != '' { '[${data.caption}]' } else { '[image]' }
 	return $tmpl('./templates/blocks/img.html')
 }

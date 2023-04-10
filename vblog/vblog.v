@@ -3,30 +3,19 @@ module vblog
 import vweb
 import db.pg
 import os
+import flag
+import time
 
 const (
-	vexe = os.getenv('VEXE')
+	vexe             = os.getenv('VEXE')
+	port             = 8080
+	generator_server = 'http://127.0.0.1:${port}'
 )
 
 pub fn init(db &pg.DB, pages_dir string, upload_dir string) ![]&vweb.ControllerPath {
 	init_database(db)!
-	
+
 	vblog_dir := os.dir(@FILE)
-	// mut upload_dir := _upload_dir
-	// // add trailing '/' after upload dir for compatibility
-	// $if windows {
-	// 	if _upload_dir.ends_with('/') == false && _upload_dir.ends_with('\\') == false {
-	// 		upload_dir += '/'
-	// 	} else if _upload_dir.ends_with('\\') {
-	// 		upload_dir.last() = '/'
-	// 	}
-	// } $else {
-	// 	if _upload_dir.ends_with('/') == false {
-	// 		upload_dir += '/'
-	// 	}
-	// }
-	println(upload_dir)
-	
 
 	// Upload App
 	mut upload_app := &Upload{
@@ -59,41 +48,129 @@ pub fn init(db &pg.DB, pages_dir string, upload_dir string) ![]&vweb.ControllerP
 	return controllers
 }
 
-struct Admin {
-	vweb.Context
-pub mut:
-	db pg.DB [required; vweb_global]
-}
-
-['/']
-fn (mut app Admin) index() vweb.Result {
-	if '/index.html' in app.static_files.keys() {
-		return app.file(app.static_files['/index.html'])
+pub fn start[T](mut app T, port int) ! {
+	mut fp := flag.new_flag_parser(os.args)
+	fp.application('V Blog')
+	fp.version('0.0.1')
+	fp.description('Simple static site generator for articles')
+	fp.skip_executable()
+	f_user := fp.bool('user', `u`, false, 'user mode (not dev), ignored when generating the site')
+	f_generate := fp.bool('generate', `g`, false, 'generate the site')
+	f_output := fp.string('out', `o`, 'public', 'output dir')
+	fp.finalize() or {
+		println(fp.usage())
+		return
 	}
 
-	return app.not_found()
+	if f_generate {
+		start_site_generation[T](mut app, f_output)!
+		return
+	}
+
+	// start web server in dev mode
+	app.dev = !f_user
+
+	// 127.0.0.1 becaust its soo much faster on windows
+	vweb.run_at(app, host: '127.0.0.1', port: port, family: .ip, nr_workers: 1)!
 }
 
-pub struct Upload {
-	vweb.Context
-pub mut:
-	db           pg.DB  [required; vweb_global]
-	upload_dir   string [required; vweb_global]
-	current_path string [vweb_global]
-}
+fn start_site_generation[T](mut app T, output_dir string) ! {
+	println('[V Blog] Starting site generation into "${output_dir}"...')
+	std_msg := '\nSee the docs for more information on required methods.'
 
-// handle static image uploads
-['/img/:img_path'; get]
-pub fn (mut app Upload) get_image(img_path string) vweb.Result {
-	file_path := os.join_path(app.upload_dir, 'img', img_path)
+	mut routes := []string{}
+	$for method in T.methods {
+		routes << method.name
 
-	// prevent directory traversal
-	if file_path.starts_with(app.upload_dir) == false {
-		return app.not_found()
+		// validate paths
+		if method.name == 'article_page' {
+			if method.attrs.any(it.starts_with('/articles/:')) == false {
+				eprintln('error: expecting method "article_page" to be a dynamic route that starts with "/articles/"')
+				return
+			}
+		}
 	}
-	if os.exists(file_path) {
-		return app.file(file_path)
-	} else {
-		return app.not_found()
+	// check if required routes are present
+	if 'article_page' !in routes {
+		eprintln('error: expecting method "article_page (int) vweb.Result" on "${T.name}"${std_msg}')
+		return
 	}
+	if 'home' !in routes {
+		eprintln('error: expecting method "home () vweb.Result on "${T.name}"${std_msg}')
+		return
+	}
+
+	start := time.ticks()
+
+	// the output directory's path
+	dist_path := os.abs_path(output_dir)
+	// clear old dir
+	if os.exists(dist_path) {
+		os.rmdir_all(dist_path)!
+	}
+	os.mkdir_all(dist_path)!
+
+	// copy static files
+	for static_file, static_path in app.static_files {
+		// ignore trailing "/" in static files
+		static_out_path := os.join_path(dist_path, static_file.all_after_first('/'))
+		os.mkdir_all(os.dir(static_out_path))!
+		os.cp(static_path, static_out_path)!
+	}
+	// copy upload dir
+	upload_path := os.join_path(dist_path, 'uploads')
+	os.mkdir(upload_path)!
+	os.cp_all(app.upload_dir, upload_path, true)!
+
+	// home page
+	index_path := os.join_path(dist_path, 'index.html')
+
+	i_start := time.ticks()
+	app.home()
+	i_end := time.ticks()
+	println('generated home page in ${i_end - i_start}ms')
+
+	mut index_f := os.create(index_path) or { panic(err) }
+	index_f.write(app.s_html.bytes())!
+	index_f.close()
+
+	// articles
+	articles_path := os.join_path(dist_path, 'articles')
+	os.mkdir(articles_path)!
+
+	articles := get_all_articles(mut app.db)
+	for article in articles {
+		if article.show == false {
+			continue
+		}
+
+		// generate the article html
+		file_art := generate(article.block_data)
+
+		file_path := os.join_path_single(app.pages_dir, '${article.id}.html')
+		mut f_art := os.create(file_path) or {
+			return error('file "${file_path}" is not writeable')
+		}
+		f_art.write_string(file_art) or {
+			return error('could not write file "${article.id}.html"')
+		}
+		f_art.close()
+
+		// get html
+		article_path := os.join_path(articles_path, article.id.str(), 'index.html')
+		os.mkdir_all(os.dir(article_path))!
+
+		a_start := time.ticks()
+		app.article_page(article.id)
+		a_end := time.ticks()
+		println('generated article "${article.name}" in ${a_end - a_start}ms')
+
+		mut f := os.create(article_path) or { panic(err) }
+		f.write(app.s_html.bytes())!
+		f.close()
+	}
+
+	end := time.ticks()
+
+	println('[V Blog] Done! Outputted your website to "${output_dir} in ${end - start}ms')
 }
