@@ -14,7 +14,7 @@ pub struct Api {
 	middlewares map[string][]vweb.Middleware = {
 		'/': [cors]
 	}
-	template_dir    string [required; vweb_global]
+	template_dir string [required; vweb_global]
 	upload_dir   string [required; vweb_global]
 	articles_url string [required; vweb_global]
 pub mut:
