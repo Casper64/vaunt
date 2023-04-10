@@ -1,4 +1,4 @@
-# vblog
+# Vaunt
 
 ## Getting Started
 

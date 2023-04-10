@@ -2,7 +2,7 @@
 
 <template>
     <nav>
-        <a href="/" class="brand">V Blog</a>
+        <a href="/" class="brand">Vaunt</a>
         <div class="nav-links">
             <!-- <router-link to="/admin">Categories</router-link> -->
             <router-link to="/admin">Articles</router-link>

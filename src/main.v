@@ -1,7 +1,7 @@
 module main
 
 import vweb
-import vblog
+import vaunt
 import db.pg
 import os
 import time
@@ -24,8 +24,8 @@ pub mut:
 }
 
 fn main() {
-	db := pg.connect(user: 'dev', password: 'password', dbname: 'vblog')!
-	controllers := vblog.init(db, template_dir, upload_dir)!
+	db := pg.connect(user: 'dev', password: 'password', dbname: 'vaunt')!
+	controllers := vaunt.init(db, template_dir, upload_dir)!
 
 	mut app := &App{
 		template_dir: template_dir
@@ -35,14 +35,14 @@ fn main() {
 	}
 
 	app.handle_static('src/static', true)
-	vblog.start(mut app, 8080)!
+	vaunt.start(mut app, 8080)!
 }
 
 ['/']
 pub fn (mut app App) home() vweb.Result {
 	title := 'Home'
 
-	articles := vblog.get_all_articles(mut app.db).filter(it.show == true)
+	articles := vaunt.get_all_articles(mut app.db).filter(it.show == true)
 
 	content := $tmpl('./templates/home.html')
 	layout := $tmpl('./templates/layout.html')
@@ -52,7 +52,7 @@ pub fn (mut app App) home() vweb.Result {
 
 ['/articles/:article_id']
 pub fn (mut app App) article_page(article_id int) vweb.Result {
-	article := vblog.get_article(mut app.db, article_id) or { return app.not_found() }
+	article := vaunt.get_article(mut app.db, article_id) or { return app.not_found() }
 	if article.show == false {
 		return app.not_found()
 	}
