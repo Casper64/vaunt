@@ -76,7 +76,7 @@ pub fn start[T](mut app T, port int) ! {
 	// start web server in dev mode
 	app.dev = !f_user
 
-	// 127.0.0.1 becaust its soo much faster on windows
+	// 127.0.0.1 because its soo much faster on windows
 	vweb.run_at(app, host: '127.0.0.1', port: port, family: .ip, nr_workers: 1)!
 }
 

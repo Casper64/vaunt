@@ -69,10 +69,10 @@ const (
 // Base app for Vaunt which you can extend
 struct App {
 	vweb.Context
-	vweb.Controller
 pub:
-	template_dir string
-	upload_dir   string
+	controllers  []&vweb.ControllerPath
+	template_dir string                 [vweb_global]
+	upload_dir   string                 [vweb_global]
 pub mut:
 	db     pg.DB  [vweb_global]
 	dev    bool   [vweb_global] // used by Vaunt internally
