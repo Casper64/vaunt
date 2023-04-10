@@ -11,6 +11,7 @@ import json
 
 pub struct Api {
 	vweb.Context
+pub:
 	middlewares map[string][]vweb.Middleware = {
 		'/': [cors]
 	}

@@ -4,7 +4,7 @@ import vweb
 import db.pg
 import os
 
-struct Admin {
+pub struct Admin {
 	vweb.Context
 pub mut:
 	db pg.DB [required; vweb_global]
