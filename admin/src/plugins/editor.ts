@@ -6,7 +6,7 @@ import LinkTool from '@editorjs/link'
 import Paragraph from '@editorjs/paragraph'
 import Quote from '@editorjs/quote'
 // import NestedList from '@editorjs/nested-list'
-import MermaidTool from 'editorjs-mermaid'
+// import MermaidTool from 'editorjs-mermaid'
 import ImageTool from '@editorjs/image'
 import Header from '@editorjs/header'
 import Table from '@editorjs/table'
@@ -117,7 +117,7 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
         //@ts-ignore
         logLevel: 'ERROR',
         onReady: () => {
-            MermaidTool.config({'theme': 'neutral'})
+            // MermaidTool.config({'theme': 'neutral'})
             new DragDrop(editor);
         },
         autofocus: true,
