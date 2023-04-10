@@ -12,7 +12,7 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: '../vaunt/admin',
+    outDir: '../src/admin',
     assetsDir: 'admin/assets',
     copyPublicDir: true,
     emptyOutDir: true
