@@ -3,7 +3,10 @@
 **Disclamer:** Vaunt is still early software and for now used as a showcase of the
 power that V and Vweb is capable of. There might be breaking changes in the future.
 
-Vaunt is a cms writting in [V](https://vlang.io/) that you can use to generate static sites.
+Vaunt is a cms with visual editor written in [V](https://vlang.io/) that you can 
+use to generate static sites.
+
+![Screenshot 2023-04-11 000229](https://user-images.githubusercontent.com/43839798/231007560-066b4a68-4922-4db2-a324-bc0ed5514366.png)
 
 ## Features
 - Admin panel with visual editor
