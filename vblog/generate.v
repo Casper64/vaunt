@@ -3,12 +3,11 @@ module vblog
 import json
 import net.urllib
 
-
 // 			Generate Block Html
 // =======================================
 
 struct Block {
-	data       string
+	data string
 pub:
 	id         string
 	block_type string [json: 'type']
@@ -160,7 +159,7 @@ struct CodeData {
 	code string
 pub:
 	language string
-	html string
+	html     string
 }
 
 fn generate_code(block &Block) string {

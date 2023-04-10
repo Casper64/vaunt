@@ -63,6 +63,7 @@ pub fn start[T](mut app T, port int) ! {
 	}
 
 	if f_generate {
+		app.dev = false
 		start_site_generation[T](mut app, f_output)!
 		return
 	}

@@ -42,4 +42,3 @@ pub fn (mut app Upload) get_image(img_path string) vweb.Result {
 		return app.not_found()
 	}
 }
-

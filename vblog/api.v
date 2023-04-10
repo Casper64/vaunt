@@ -122,7 +122,7 @@ pub fn (mut app Api) delete_article(article_id int) vweb.Result {
 
 	for url in img_urls {
 		file_path := os.join_path(app.upload_dir, 'img', os.base(url))
-		app.delete_image_file(article_id, file_path) or { }
+		app.delete_image_file(article_id, file_path) or {}
 	}
 
 	sql app.db {
@@ -484,7 +484,7 @@ fn is_empty(key string, form map[string]string) bool {
 // get all articles
 pub fn get_all_articles(mut db pg.DB) []Article {
 	mut articles := sql db {
-		select from Article order by updated_at desc
+		select from Article order by created_at desc
 	} or { []Article{} }
 
 	for mut article in articles {
