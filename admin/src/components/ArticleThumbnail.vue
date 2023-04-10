@@ -66,9 +66,9 @@ async function publishHandler() {
             <router-link :to="`/admin/edit/${article.id}`">
                 <FormKit type="button">Edit</FormKit>
             </router-link>
-            <router-link :to="`/admin/settings/${article.id}`">
+            <!-- <router-link :to="`/admin/settings/${article.id}`">
                 <FormKit type="button">Settings</FormKit>
-            </router-link>
+            </router-link> -->
             <FormKit type="button" @click="deletePost">Delete</FormKit>
         </div>
     </div>

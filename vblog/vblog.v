@@ -12,10 +12,15 @@ const (
 	generator_server = 'http://127.0.0.1:${port}'
 )
 
-pub fn init(db &pg.DB, pages_dir string, upload_dir string) ![]&vweb.ControllerPath {
+pub fn init(db &pg.DB, template_dir string, upload_dir string) ![]&vweb.ControllerPath {
 	init_database(db)!
 
 	vblog_dir := os.dir(@FILE)
+
+	// ensure articles dir exists
+	os.mkdir_all(os.join_path(template_dir, 'articles'))!
+	// ensure upload dir exists
+	os.mkdir_all(upload_dir)!
 
 	// Upload App
 	mut upload_app := &Upload{
@@ -38,7 +43,7 @@ pub fn init(db &pg.DB, pages_dir string, upload_dir string) ![]&vweb.ControllerP
 	controllers := [
 		vweb.controller('/api', &Api{
 			db: db
-			pages_dir: pages_dir
+			template_dir: template_dir
 			upload_dir: upload_dir
 			articles_url: '/articles'
 		}),
@@ -119,7 +124,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 		os.cp(static_path, static_out_path)!
 	}
 	// copy upload dir
-	upload_path := os.join_path(dist_path, 'uploads')
+	upload_path := os.join_path(dist_path, os.base(app.upload_dir))
 	os.mkdir(upload_path)!
 	os.cp_all(app.upload_dir, upload_path, true)!
 
@@ -148,7 +153,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 		// generate the article html
 		file_art := generate(article.block_data)
 
-		file_path := os.join_path_single(app.pages_dir, '${article.id}.html')
+		file_path := os.join_path_single(app.template_dir, '${article.id}.html')
 		mut f_art := os.create(file_path) or {
 			return error('file "${file_path}" is not writeable')
 		}

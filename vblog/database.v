@@ -15,7 +15,7 @@ fn init_database(db &pg.DB) ! {
 pub struct Article {
 pub mut:
 	id          int    [primary; sql: serial]
-	name        string [nonull]
+	name        string [unique]
 	description string
 	show        bool
 	thumbnail   int

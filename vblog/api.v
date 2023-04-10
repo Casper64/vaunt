@@ -14,7 +14,7 @@ pub struct Api {
 	middlewares map[string][]vweb.Middleware = {
 		'/': [cors]
 	}
-	pages_dir    string [required; vweb_global]
+	template_dir    string [required; vweb_global]
 	upload_dir   string [required; vweb_global]
 	articles_url string [required; vweb_global]
 pub mut:
@@ -59,7 +59,14 @@ pub fn (mut app Api) create_article() vweb.Result {
 
 	sql app.db {
 		insert new_article into Article
-	} or {}
+	} or {
+		if err.msg().contains('unique') {
+			app.set_status(400, '')
+			return app.text('error: article with name "${new_article.name}" already exists!')
+		}
+		app.set_status(500, '')
+		return app.text('error: inserting article into database has failed')
+	}
 
 	rows := sql app.db {
 		select from Article where id == app.db.last_id()
@@ -347,10 +354,11 @@ pub fn (mut app Api) publish_article() vweb.Result {
 		return app.text('error: could not update article, please try again later')
 	}
 
-	blocks := rows[0].block_data
+	article := rows[0]
+	blocks := article.block_data
 	file := generate(blocks)
 
-	file_path := os.join_path_single(app.pages_dir, '${article_id}.html')
+	file_path := os.join_path(app.template_dir, 'articles', '${article_id}.html')
 	mut f := os.create(file_path) or {
 		app.set_status(500, 'file "${file_path}" is not writeable')
 		return app.text('error writing file...')
@@ -363,7 +371,7 @@ pub fn (mut app Api) publish_article() vweb.Result {
 
 	f.close()
 
-	return app.text('${app.articles_url}/${article_id}')
+	return app.text('${app.articles_url}/${article.id}')
 }
 
 // 			Files
