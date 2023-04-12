@@ -14,12 +14,6 @@ use to generate static sites.
 - Fully static site generation
 - Theming
 
-## Roadmap
-- Categories
-- Custom routes
-- Theming support in admin panel
-- Custom blocks in the frontend editor
-
 ## Requirements
 Make sure you have V installed. You can check out the 
 [documentation](https://github.com/vlang/v/#installing-v-from-source) to install V.
