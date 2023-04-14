@@ -112,20 +112,7 @@ before returning. If you forget to store the generated html in `app.s_html`
 the generated output of the static site won't contain your html.
 
 The following routes **must** be defined for the site generation to work:
-
-### Home Page
-A method with name `home` and route `"/"`. `home` is used to generate the `index.html`
-for you website.
-
-**Example:**
-```v ignore
-['/']
-pub fn (mut app App) home() vweb.Result {
-    // save html in `app.s_html` first before returning it
-    app.s_html = '<h1>The home page</h1>'
-    return app.html(app.s_html)
-}
-```
+- Article Page
 
 ### Article Page
 A method with name `article_page` and dynamic route "/articles/:article_id".
@@ -151,8 +138,22 @@ pub fn (mut app App) article_page(article_id int) vweb.Result {
 }
 ```
 
-#### Custom Routes
-At this moment any custom routes won't be generated, but it's next in my planning.
+### Custom Routes
+All methods on your App that return `vweb.Result` are considered routes.
+Vaunt will make sure to output files that are reachable the same way
+as while running the dev server.
+
+**Example:**
+A method with attribute `['/about']` will produce the html file `about.html`.
+As expected a method with attribute `['/nested/about']` will put html file at
+`nested/about.html`.
+
+#### Index routes
+Index routes (or routes ending with a "/") will have `index.html` as ending. 
+So the route `/nested/` will put the html file at `nested/index.html`.
+
+#### Dynamic routes
+Currently custom dynamic routes are not supported.
 
 ## Generate
 You can generate the static site by passing the `--generate` flag or `-g` for short.

@@ -84,30 +84,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 	println('[Vaunt] Starting site generation into "${output_dir}"...')
 	std_msg := '\nSee the docs for more information on required methods.'
 
-	mut routes := []string{}
-	$for method in T.methods {
-		routes << method.name
-
-		// validate paths
-		if method.name == 'article_page' {
-			if method.attrs.any(it.starts_with('/articles/:')) == false {
-				eprintln('error: expecting method "article_page" to be a dynamic route that starts with "/articles/"')
-				return
-			}
-		}
-	}
-	// check if required routes are present
-	if 'article_page' !in routes {
-		eprintln('error: expecting method "article_page (int) vweb.Result" on "${T.name}"${std_msg}')
-		return
-	}
-	if 'home' !in routes {
-		eprintln('error: expecting method "home () vweb.Result on "${T.name}"${std_msg}')
-		return
-	}
-
 	start := time.ticks()
-
 	// the output directory's path
 	dist_path := os.abs_path(output_dir)
 	// clear old dir
@@ -128,19 +105,76 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 	os.mkdir(upload_path)!
 	os.cp_all(app.upload_dir, upload_path, true)!
 
-	// home page
-	index_path := os.join_path(dist_path, 'index.html')
+	println('[Vaunt] Generating custom pages...')
 
-	i_start := time.ticks()
-	app.home()
-	i_end := time.ticks()
-	println('generated home page in ${i_end - i_start}ms')
+	mut routes := []string{}
+	$for method in T.methods {
+		$if method.return_type is vweb.Result {
+			routes << method.name
 
-	mut index_f := os.create(index_path) or { panic(err) }
-	index_f.write(app.s_html.bytes())!
-	index_f.close()
+			// validate routes
+			if method.name == 'article_page' {
+				if method.attrs.any(it.starts_with('/articles/:')) == false {
+					eprintln('error: expecting method "article_page" to be a dynamic route that starts with "/articles/"')
+					return
+				}
+			} else if method.attrs.any(it.contains(':')) {
+				eprintln('error while generating "${method.name}": generating custom dynamic routes is not supported yet!')
+			} else if method.attrs.len > 1 {
+				eprintln('error while generating "${method.name}": custom routes can only have 1 property: the route')
+			} else {
+				i_start := time.ticks()
 
+				mut route := method.name
+				if method.attrs.len == 1 {
+					route = method.attrs[0]
+					// add index pages for routes like "/" -> "index.html" or "/pages/" -> "pages/index.html
+					if route.ends_with('/') {
+						route += 'index'
+					}
+					// skip leading "/"
+					route = route[1..]
+				}
+
+				output_file := '${route}.html'
+
+				file_path := os.join_path(dist_path, output_file)
+				// make dirs for nested routes
+				os.mkdir_all(os.dir(file_path))!
+
+				// run method, resulting html should be in `app.s_html`
+				app.$method()
+				if app.s_html.len == 0 {
+					eprintln('error: method "${method.name}" produced no html!')
+				}
+
+				mut index_f := os.create(file_path)!
+				index_f.write(app.s_html.bytes())!
+				index_f.close()
+
+				// reset app
+				app.s_html = ''
+
+				i_end := time.ticks()
+				println('[Vaunt] Generated page "${output_file}" in ${i_end - i_start}ms')
+			}
+		}
+	}
 	// articles
+	if 'article_page' !in routes {
+		eprintln('[Vaunt] Error: expecting method "article_page (int) vweb.Result" on "${T.name}"${std_msg}')
+		return
+	} else {
+		println('[Vaunt] Generating article pages...')
+		generate_articles(mut app, dist_path) or { panic(err) }
+	}
+
+	end := time.ticks()
+
+	println('[Vaunt] Done! Outputted your website to "${output_dir} in ${end - start}ms')
+}
+
+fn generate_articles[T](mut app T, dist_path string) ! {
 	articles_path := os.join_path(dist_path, 'articles')
 	os.mkdir(articles_path)!
 
@@ -149,6 +183,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 		if article.show == false {
 			continue
 		}
+		a_start := time.ticks()
 
 		// generate the article html
 		file_art := generate(article.block_data)
@@ -163,20 +198,22 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 		f_art.close()
 
 		// get html
-		article_path := os.join_path(articles_path, article.id.str(), 'index.html')
+		article_path := os.join_path(articles_path, '${article.id}.html')
 		os.mkdir_all(os.dir(article_path))!
 
-		a_start := time.ticks()
 		app.article_page(article.id)
-		a_end := time.ticks()
-		println('generated article "${article.name}" in ${a_end - a_start}ms')
+		if app.s_html.len == 0 {
+			eprintln('error: article "${article.name}" produced no html!')
+		}
 
 		mut f := os.create(article_path) or { panic(err) }
 		f.write(app.s_html.bytes())!
 		f.close()
+
+		// reset app
+		app.s_html = ''
+
+		a_end := time.ticks()
+		println('[Vaunt] Generated article "${article.name}" in ${a_end - a_start}ms')
 	}
-
-	end := time.ticks()
-
-	println('[Vaunt] Done! Outputted your website to "${output_dir} in ${end - start}ms')
 }

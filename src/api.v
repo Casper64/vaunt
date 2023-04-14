@@ -163,7 +163,7 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 	}
 
 	// check if article exists
-	article := get_article(mut app.db, article_id) or {
+	get_article(mut app.db, article_id) or {
 		app.set_status(400, '')
 		return app.text('error: article with id "${article_id}" does not exist')
 	}
