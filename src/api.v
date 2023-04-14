@@ -92,6 +92,7 @@ pub fn (mut app Api) create_article() vweb.Result {
 		}
 
 		article.image_src = img_src
+		article.thumbnail = img_id
 	}
 
 	return app.json(article)
@@ -109,7 +110,6 @@ pub fn (mut app Api) delete_article(article_id int) vweb.Result {
 		app.set_status(400, '')
 		return app.text('error: "id" is not a number')
 	}
-	// TODO: make DRY
 
 	// remove all images used in that article
 	img_blocks := app.get_all_image_blocks(article_id) or { []Block{} }
@@ -128,6 +128,7 @@ pub fn (mut app Api) delete_article(article_id int) vweb.Result {
 		img_urls << img_rows[0].src
 	}
 
+	// delete all images
 	for url in img_urls {
 		file_path := os.join_path(app.upload_dir, 'img', os.base(url))
 		app.delete_image_file(article_id, file_path) or {}
@@ -161,11 +162,17 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 		return app.ok('')
 	}
 
+	// check if article exists
+	article := get_article(mut app.db, article_id) or {
+		app.set_status(400, '')
+		return app.text('error: article with id "${article_id}" does not exist')
+	}
+
+	// TODO: split?
 	if is_empty('name', app.form) || is_empty('description', app.form) {
 		app.set_status(400, '')
 		return app.text('error: field "name" and "description" are required')
 	}
-
 	if 'thumbnail' in app.files && is_empty('thumbnail-name', app.form) == false {
 		// TODO: remove old thumbnail img + plus check if its used elsewhere
 
@@ -199,21 +206,16 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 // upload_image returns the Image id and the path of the uploaded file
 fn (mut app Api) upload_image(article_id int, file_key string, img_name string) !(int, string) {
 	img_dir := os.join_path(app.upload_dir, 'img')
-
 	fdata := app.files[file_key][0].data.bytes()
 
 	os.mkdir_all(img_dir)!
-
 	file_path := os.join_path(img_dir, img_name)
 
 	mut f := os.create(file_path)!
-
 	f.write(fdata)!
-
 	f.close()
 
 	upload_path := 'uploads/img/${img_name}'
-
 	img := Image{
 		name: img_name
 		src: upload_path
@@ -223,10 +225,10 @@ fn (mut app Api) upload_image(article_id int, file_key string, img_name string) 
 	sql app.db {
 		insert img into Image
 	}!
-
 	return app.db.last_id(), upload_path
 }
 
+// get_all_image_blocks returns all blocks with type="image" of an article with id=`aritcle_id`
 fn (mut app Api) get_all_image_blocks(article_id int) ![]Block {
 	article := sql app.db {
 		select from Article where id == article_id
@@ -279,6 +281,7 @@ pub fn (mut app Api) save_blocks() vweb.Result {
 	return app.ok('updated block')
 }
 
+// used in editorjs Image block
 struct LinkData {
 pub mut:
 	link    string
@@ -378,7 +381,7 @@ pub fn (mut app Api) publish_article() vweb.Result {
 // 			Files
 // ==========================
 
-struct ImageBlockResponse {
+pub struct ImageBlockResponse {
 pub mut:
 	success int
 	file    map[string]string
@@ -447,8 +450,7 @@ pub fn (mut app Api) delete_image_endpoint() vweb.Result {
 
 fn (mut app Api) delete_image_file(article_id int, file_path string) ! {
 	img_url := os.join_path(os.base(app.upload_dir), 'img', os.base(file_path))
-
-	// ignore for now, won't affect anyting if this stays in the database
+	// ignore for now, won't affect anything if this stays in the database
 	sql app.db {
 		delete from Image where src == img_url && article_id == article_id
 	} or {}

@@ -6,14 +6,14 @@ import net.urllib
 // 			Generate Block Html
 // =======================================
 
-struct Block {
-	data string
+pub struct Block {
 pub:
 	id         string
 	block_type string [json: 'type']
+	data       string [required]
 }
 
-fn generate(data string) string {
+pub fn generate(data string) string {
 	blocks := json.decode([]Block, data) or { []Block{} }
 
 	mut html := ''
@@ -52,13 +52,13 @@ fn generate(data string) string {
 	return html
 }
 
-struct HeadingData {
+pub struct HeadingData {
 pub:
 	text  string
 	level int
 }
 
-fn generate_heading(block &Block) string {
+pub fn generate_heading(block &Block) string {
 	data := json.decode(HeadingData, block.data) or { HeadingData{} }
 	if data.level == 1 {
 		return $tmpl('./templates/blocks/h1.html')
@@ -71,17 +71,17 @@ fn generate_heading(block &Block) string {
 	}
 }
 
-struct ParagraphData {
+pub struct ParagraphData {
 pub:
 	text string
 }
 
-fn generate_paragraph(block &Block) string {
+pub fn generate_paragraph(block &Block) string {
 	data := json.decode(ParagraphData, block.data) or { ParagraphData{} }
 	return $tmpl('./templates/blocks/p.html')
 }
 
-fn generate_link(block &Block) string {
+pub fn generate_link(block &Block) string {
 	data := json.decode(LinkData, block.data) or { LinkData{} }
 	url := urllib.parse(data.link) or { urllib.URL{} }
 	anchor := '${url.scheme}://${url.host}'
@@ -89,13 +89,13 @@ fn generate_link(block &Block) string {
 	return $tmpl('./templates/blocks/link.html')
 }
 
-struct ImageData {
+pub struct ImageData {
 pub:
 	caption string
 	file    map[string]string
 }
 
-fn generate_image(block &Block) string {
+pub fn generate_image(block &Block) string {
 	data := json.decode(ImageData, block.data) or { ImageData{} }
 
 	mut url := data.file['url']
@@ -109,7 +109,7 @@ fn generate_image(block &Block) string {
 	return $tmpl('./templates/blocks/img.html')
 }
 
-struct EmbedData {
+pub struct EmbedData {
 pub:
 	service string
 	source  string [skip]
@@ -119,29 +119,29 @@ pub:
 	caption string
 }
 
-fn generate_embed(block &Block) string {
+pub fn generate_embed(block &Block) string {
 	data := json.decode(EmbedData, block.data) or { EmbedData{} }
 	return $tmpl('./templates/blocks/embed.html')
 }
 
-struct QuoteData {
+pub struct QuoteData {
 pub:
 	text    string
 	caption string
 }
 
-fn generate_quote(block &Block) string {
+pub fn generate_quote(block &Block) string {
 	data := json.decode(QuoteData, block.data) or { QuoteData{} }
 	return $tmpl('./templates/blocks/quote.html')
 }
 
-struct TableData {
+pub struct TableData {
 pub mut:
 	with_headings bool       [json: withHeadings]
 	content       [][]string
 }
 
-fn generate_table(block &Block) string {
+pub fn generate_table(block &Block) string {
 	mut data := json.decode(TableData, block.data) or { TableData{} }
 
 	mut table_headers := []string{}
@@ -155,14 +155,14 @@ fn generate_table(block &Block) string {
 	return $tmpl('./templates/blocks/table.html')
 }
 
-struct CodeData {
+pub struct CodeData {
 	code string
 pub:
 	language string
 	html     string
 }
 
-fn generate_code(block &Block) string {
+pub fn generate_code(block &Block) string {
 	mut data := json.decode(CodeData, block.data) or { CodeData{} }
 
 	return $tmpl('./templates/blocks/code.html')

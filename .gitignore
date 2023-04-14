@@ -22,3 +22,6 @@ bin/
 
 # vweb and database
 *.db
+
+# test app
+tests/uploads
