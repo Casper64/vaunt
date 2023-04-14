@@ -145,7 +145,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 				// run method, resulting html should be in `app.s_html`
 				app.$method()
 				if app.s_html.len == 0 {
-					eprintln('error: method "${method.name}" produced no html!')
+					eprintln('warning: method "${method.name}" produced no html! Did you forget to set `app.s_html`?')
 				}
 
 				mut index_f := os.create(file_path)!
@@ -203,7 +203,7 @@ fn generate_articles[T](mut app T, dist_path string) ! {
 
 		app.article_page(article.id)
 		if app.s_html.len == 0 {
-			eprintln('error: article "${article.name}" produced no html!')
+			eprintln('warning: article "${article.name}" produced no html! Did you forget to set `app.s_html`?')
 		}
 
 		mut f := os.create(article_path) or { panic(err) }
