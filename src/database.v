@@ -8,6 +8,7 @@ fn init_database(db &pg.DB) ! {
 	sql db {
 		create table Article
 		create table Image
+		create table ThemeOption
 	}!
 }
 
@@ -32,4 +33,13 @@ pub mut:
 	name       string [nonull]
 	src        string [nonull]
 	article_id int    [nonull]
+}
+
+[table: 'themeOptions']
+struct ThemeOption {
+pub mut:
+	id          int    [primary; sql: serial]
+	name        string [nonull]
+	option_type string [nonull]
+	data        string
 }

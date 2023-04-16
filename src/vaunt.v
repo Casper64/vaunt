@@ -5,6 +5,7 @@ import db.pg
 import os
 import flag
 import time
+import net.http
 
 const (
 	vexe             = os.getenv('VEXE')
@@ -12,8 +13,9 @@ const (
 	generator_server = 'http://127.0.0.1:${port}'
 )
 
-pub fn init(db &pg.DB, template_dir string, upload_dir string) ![]&vweb.ControllerPath {
+pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T) ![]&vweb.ControllerPath {
 	init_database(db)!
+	update_theme_db(db, theme)!
 
 	vaunt_dir := os.dir(@FILE)
 
@@ -21,6 +23,18 @@ pub fn init(db &pg.DB, template_dir string, upload_dir string) ![]&vweb.Controll
 	os.mkdir_all(os.join_path(template_dir, 'articles'))!
 	// ensure upload dir exists
 	os.mkdir_all(upload_dir)!
+
+	// Api app
+	mut api_app := &Api{
+		db: db
+		template_dir: template_dir
+		upload_dir: upload_dir
+		articles_url: '/articles'
+	}
+
+	mut theme_app := &ThemeHandler{
+		db: db
+	}
 
 	// Upload App
 	mut upload_app := &Upload{
@@ -41,12 +55,8 @@ pub fn init(db &pg.DB, template_dir string, upload_dir string) ![]&vweb.Controll
 	admin_app.serve_static('/index.html', '${dist_path}/index.html')
 
 	controllers := [
-		vweb.controller('/api', &Api{
-			db: db
-			template_dir: template_dir
-			upload_dir: upload_dir
-			articles_url: '/articles'
-		}),
+		vweb.controller('/api/theme', theme_app),
+		vweb.controller('/api', api_app),
 		vweb.controller('/admin', admin_app),
 		vweb.controller('/uploads', upload_app),
 	]
