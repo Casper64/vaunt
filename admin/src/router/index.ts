@@ -6,6 +6,8 @@ import CreateView from '@/views/Create.vue'
 import View404 from '@/views/404.vue'
 import EditView from '@/views/Edit.vue'
 import {useBlockStore} from '@/stores/blocks'
+import ThemeView from '@/views/Theme.vue'
+import { useThemeStore } from '@/stores/theme'
 
 // In the built app all routes will be after the route `/admin` so we prepend
 // it now in the router. This avoids many headaches in production and this way
@@ -45,6 +47,15 @@ const router = createRouter({
                 // then fetch all blocks which should at least return `[]`
                 const blockStore = useBlockStore()
                 await blockStore.fetchData(article.id)
+                next()
+            }
+        }, {
+            path: '/admin/theme',
+            name: 'theme',
+            component: ThemeView,
+            async beforeEnter(to, from, next) {
+                const store = useThemeStore()
+                await store.fetchData()
                 next()
             }
         }, {

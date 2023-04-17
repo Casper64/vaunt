@@ -21,3 +21,23 @@ interface Article {
 }
 
 type CreateArticle = Pick<Article, 'name' | 'description' | 'thumbnail'>
+
+type ThemeOptionType = 'Color' | 'ClassList'
+
+interface ThemeOption {
+    id: number
+    name: string
+    option_type: ThemeOptionType
+    data: string
+}
+
+interface Color {
+    name: string
+    color: string
+}
+
+interface ClassList {
+    name: string
+    options: Record<string, string>
+    selected: string
+}

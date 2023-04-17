@@ -11,6 +11,8 @@ const (
 	upload_dir   = os.abs_path('tests/uploads') // where you want to store uploads
 )
 
+struct Theme {}
+
 // Base app for Vaunt which you can extend
 struct App {
 	vweb.Context
@@ -21,6 +23,7 @@ pub:
 pub mut:
 	db     pg.DB  [vweb_global]
 	dev    bool   [vweb_global] // used by Vaunt internally
+	theme  Theme  [vweb_global]
 	s_html string
 	// used by Vaunt to generate html
 }
@@ -41,11 +44,13 @@ fn main() {
 	assert timeout > 0
 	spawn exit_after_timeout(timeout)
 
+	theme := Theme{}
+
 	// insert your own credentials
 	db := pg.connect(user: os.args[3], password: os.args[4], dbname: os.args[5])!
 
 	// setup database and controllers
-	controllers := vaunt.init(db, template_dir, upload_dir)!
+	controllers := vaunt.init(db, template_dir, upload_dir, theme)!
 
 	// create the app
 	mut app := &App{

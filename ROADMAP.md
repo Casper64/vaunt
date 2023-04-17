@@ -8,4 +8,4 @@
 - [ ] Expose more functions from the api
 - [ ] Add more utility functions for app templates, like url reversing.
 - [ ] Allow custom blocks
-- [ ] Allow theme settings in admin panel
+- [X] Allow theme settings in admin panel

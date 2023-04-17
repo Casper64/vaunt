@@ -16,7 +16,13 @@ fn (mut app Admin) index() vweb.Result {
 		return app.file(app.static_files['/index.html'])
 	}
 
-	return app.not_found()
+	app.set_status(404, '')
+	return app.text('Not Found')
+}
+
+// always fallback to index.html. vue-router will handle the routes from there
+pub fn (mut app Admin) not_found() vweb.Result {
+	return app.index()
 }
 
 pub struct Upload {
