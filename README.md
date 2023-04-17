@@ -6,7 +6,7 @@ power that V and Vweb is capable of. There might be breaking changes in the futu
 Vaunt is a cms with visual editor written in [V](https://vlang.io/) that you can 
 use to generate static sites.
 
-![Screenshot 2023-04-11 000229](https://user-images.githubusercontent.com/43839798/231007560-066b4a68-4922-4db2-a324-bc0ed5514366.png)
+![vaunt_2](https://user-images.githubusercontent.com/43839798/232623199-0df92ccc-2b12-489c-9a35-b730b9c6476d.png)
 
 ## Features
 - Admin panel with visual editor
@@ -120,7 +120,7 @@ admin panel by navigating to `"/admin"`. The UI should be self-explanatory.
 ## Theme Settings
 It is possible to make you theme configurable in the admin panel.
 
-[insert gif]
+![vaunt_theme](https://user-images.githubusercontent.com/43839798/232623129-68a42746-8fc4-4b49-bde8-7d516b66f31f.gif)
 
 All fields of the `Theme` will be saved in the database and rendered in the admin panel.
 
