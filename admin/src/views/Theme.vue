@@ -1,17 +1,16 @@
 <script setup lang="ts">
+import ColorPicker from '@/components/ColorPicker.vue';
 import axios from '@/plugins/axios'
 import { useThemeStore } from '@/stores/theme';
 import { ref } from 'vue';
+
+import 'alwan/dist/css/alwan.min.css'
+import { watch } from 'vue';
 
 const store = useThemeStore()
 const complete = ref(false)
 
 async function updateColors(data: any) {
-    console.log(data, typeof data)
-    Object.keys(data).forEach(key => {
-        store.colors[key] = data[key]
-    })
-
     try {
         await axios.post('/theme/color', store.colors)
     } catch (err) {
@@ -22,7 +21,6 @@ async function updateColors(data: any) {
 }
 
 async function updateClassLists(data: any) {
-    console.log(data)
     Object.keys(data).forEach(key => {
         store.classLists[key].selected = data[key]
     })
@@ -41,6 +39,10 @@ function nameLabel(label: string) {
 
 const selected = ref(Object.keys(store.classLists).map(k => store.classLists[k].selected))
 
+watch(() => store.classLists, () => {
+    selected.value = Object.keys(store.classLists).map(k => store.classLists[k].selected)
+})
+
 </script>
 
 <template>
@@ -49,13 +51,9 @@ const selected = ref(Object.keys(store.classLists).map(k => store.classLists[k].
             <h1>Colors</h1>
             <FormKit type="form" @submit="updateColors" submit-label="Save">
                 <template v-for="color_name in Object.keys(store.colors)">
-                    <FormKit
-                        type="color" 
-                        :name="color_name"
-                        :value="store.colors[color_name]" 
-                        :label="nameLabel(color_name)"
-                    />
+                    <ColorPicker :color_name="color_name" v-model="store.colors[color_name]" :label="nameLabel(color_name)"/>
                 </template>
+                <FormKit outer-class="reset-button" type="button" @click="store.fetchColors">Reset</FormKit>
             </FormKit> 
         </div>
         <div class="classlists">
@@ -63,13 +61,14 @@ const selected = ref(Object.keys(store.classLists).map(k => store.classLists[k].
             <FormKit type="form" @submit="updateClassLists" submit-label="Save">
                 <template v-for="class_name, idx in Object.keys(store.classLists)">
                     <FormKit
-                        type="select" 
+                        type="radio" 
                         :name="class_name"
                         :label="store.classLists[class_name].name"
                         v-model="selected[idx]"
                         :options="store.classLists[class_name].options"
                     />
                 </template>
+                <FormKit outer-class="reset-button" type="button" @click="store.fetchClasslists">Reset</FormKit>
             </FormKit>
         </div>
     </div>
@@ -80,13 +79,25 @@ const selected = ref(Object.keys(store.classLists).map(k => store.classLists[k].
 .theme-panel {
     display: grid;
     grid-template-columns: 300px 1fr;
+    column-gap: 50px;
+    row-gap: 50px;
     padding: 50px;
+
+    & > div h1 {
+        margin-bottom: 20px;
+    }
 }
 
-.colors {
+.colors, .classlists {
     display: grid;
     justify-items: center;
     row-gap: 10px;
+    grid-template-rows: max-content 1fr;
+}
+
+.classlists h1 {
+    text-align: left;
+    width: 100%;
 }
 
 </style>
@@ -100,8 +111,9 @@ const selected = ref(Object.keys(store.classLists).map(k => store.classLists[k].
         align-items: end;
         grid-template-columns: repeat(3, 90px);
         // grid-auto-flow: column;
-        grid-auto-rows: auto;
+        grid-auto-rows: max-content;
         column-gap: 10px;
+        row-gap: 10px;
         max-width: 300px;
         // grid-auto-flow: dense;
 
@@ -114,23 +126,42 @@ const selected = ref(Object.keys(store.classLists).map(k => store.classLists[k].
         }
     }
 
-    [data-type="color"] .formkit-inner {
-        border-radius: 27px;
-        width: 27px;
-        height: 27px;
-        overflow: hidden;
-        box-shadow: none;
-        border: 1px solid var(--border-color);
-    }
+}
 
-    [data-type="color"] input[type="color"] {
-        width: 30px;
-        height: 30px;
+.theme-panel {
+    .reset-button {
+        margin-top: 20px;
+        grid-column-start: 1;
     }
 
     .formkit-actions {
-        grid-column: span 3;
-        // grid-row-start: 1;
+        grid-column-start: 3;
+    }
+
+    [data-type="button"] {
+        width: 100%;
+    }
+}
+
+.classlists {
+    form.formkit-form {
+        display: grid;
+        justify-items: center;
+        align-items: end;
+        grid-template-columns: repeat(auto-fit, 250px);
+        grid-auto-rows: max-content;
+        column-gap: 10px;
+        row-gap: 10px;
+        // max-width: 300px;
+        // grid-auto-flow: dense;
+
+        .formkit-wrapper {
+            justify-items: center;
+        }
+
+        label {
+            text-align: center;
+        }
     }
 }
 

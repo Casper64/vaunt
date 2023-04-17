@@ -26,6 +26,7 @@
     "@formkit/themes": "^0.16.4",
     "@formkit/vue": "^0.16.4",
     "@lezer/highlight": "^1.1.4",
+    "alwan": "^1.1.2",
     "axios": "^1.2.3",
     "codemirror": "^6.6.5",
     "nice-select2": "^2.1.0",

@@ -7,4 +7,4 @@
 - [ ] Categories
 - [ ] Expose more functions from the api
 - [ ] Allow custom blocks
-- [ ] Allow theme settings in admin panel
+- [X] Allow theme settings in admin panel

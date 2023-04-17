@@ -50,7 +50,7 @@ const router = createRouter({
                 next()
             }
         }, {
-            path: '/theme',
+            path: '/admin/theme',
             name: 'theme',
             component: ThemeView,
             async beforeEnter(to, from, next) {

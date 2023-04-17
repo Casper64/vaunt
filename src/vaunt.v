@@ -5,7 +5,6 @@ import db.pg
 import os
 import flag
 import time
-import net.http
 
 const (
 	vexe             = os.getenv('VEXE')
@@ -117,6 +116,8 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 
 	println('[Vaunt] Generating custom pages...')
 
+	app.before_request()
+
 	mut routes := []string{}
 	$for method in T.methods {
 		$if method.return_type is vweb.Result {
@@ -188,11 +189,14 @@ fn generate_articles[T](mut app T, dist_path string) ! {
 	articles_path := os.join_path(dist_path, 'articles')
 	os.mkdir(articles_path)!
 
-	articles := get_all_articles(mut app.db)
-	for article in articles {
+	mut articles := get_all_articles(mut app.db)
+	for mut article in articles {
 		if article.show == false {
 			continue
 		}
+		// windows saving only as '\r' in the editor??
+		article.name = article.name.replace('\r', '')
+
 		a_start := time.ticks()
 
 		// generate the article html

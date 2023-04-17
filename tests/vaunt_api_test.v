@@ -28,8 +28,8 @@ fn testsuite_begin() {
 
 fn test_setup_database() {
 	mut db := get_connection() or { panic(err) }
-	db.drop('articles') or { panic(err) }
-	db.drop('images') or { panic(err) }
+	db.drop('articles') or {}
+	db.drop('images') or {}
 }
 
 fn test_vaunt_app_can_be_compiled() {

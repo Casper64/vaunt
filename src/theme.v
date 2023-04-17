@@ -43,8 +43,21 @@ fn update_theme_db[T](db &pg.DB, theme &T) ! {
 		rows := sql db {
 			select from ThemeOption where name == field.name
 		}!
-		if rows.len == 0 {
 
+		mut should_insert := true
+		if rows.len != 0 {
+			if rows[0].option_type.int() != field.typ {
+				// type has changed so we need to reinsert the row
+				sql db {
+					delete from ThemeOption where name == field.name
+				}!
+				should_insert = true
+			} else {
+				should_insert = false
+			}
+		}
+
+		if should_insert {
 			// field is not in db yet
 			mut row := ThemeOption{}
 			$if field.typ is Color {
@@ -62,14 +75,9 @@ fn update_theme_db[T](db &pg.DB, theme &T) ! {
 			sql db {
 				insert row into ThemeOption
 			}!
-		} else {
-			// TODO: check if field type has changed
-			println('field "${field.name}": ${rows[0]}')
 		}
 	}
-
 	// remove options in the database that are no longer used
-	// TODO: also check for type
 	for other_field in field_names {
 		sql db {
 			delete from ThemeOption where name == other_field
@@ -78,7 +86,9 @@ fn update_theme_db[T](db &pg.DB, theme &T) ! {
 }
 
 // update_theme retrieves all options from the database and updates the theme
-pub fn update_theme[T](db &pg.DB, mut theme T) {
+pub fn update_theme[T](db &pg.DB, mut theme T) string {
+	mut all_colors := map[string]string{}
+
 	options := sql db {
 		select from ThemeOption
 	} or { []ThemeOption{} }
@@ -88,6 +98,7 @@ pub fn update_theme[T](db &pg.DB, mut theme T) {
 		$if field.typ is Color {
 			color_fields := options.filter(it.option_type == 'Color' && it.name == field.name)
 			theme.$(field.name) = color_fields[0].data
+			all_colors[field.name] = color_fields[0].data
 		} $else $if field.typ is ClassList {
 			classlist_fields := options.filter(it.option_type == 'ClassList'
 				&& it.name == field.name)
@@ -96,6 +107,18 @@ pub fn update_theme[T](db &pg.DB, mut theme T) {
 			}
 		}
 	}
+	return get_css_from_colors(all_colors)
+}
+
+fn get_css_from_colors(colors map[string]string) string {
+	mut css := '\n:root {\n'
+
+	for name, val in colors {
+		css += '\t--color-${name}: ${val};\n'
+	}
+
+	css += '}\n'
+	return css
 }
 
 // Theme Api routes:
@@ -192,7 +215,6 @@ pub fn (mut app ThemeHandler) get_all_classlists() vweb.Result {
 
 ['/classlist'; post]
 pub fn (mut app ThemeHandler) set_all_classlists() vweb.Result {
-	println(app.req.data)
 	classlists := json.decode(map[string]ClassList, app.req.data) or {
 		map[string]ClassList{}
 	}

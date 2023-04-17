@@ -12,7 +12,7 @@ use to generate static sites.
 - Admin panel with visual editor
 - Image uploads
 - Fully static site generation
-- Theming
+- User configurable themes
 
 ## Requirements
 Make sure you have V installed. You can check out the 
@@ -40,7 +40,7 @@ to start making your website!
 
 ## Themes
 It is possible to create themes with Vaunt. Go to the 
-[default theme](https://github.com/Casper64/vaunt-default) example 
+[Vaunt default theme](https://github.com/Casper64/vaunt-default) example 
 to get a quick start with Vaunt.
 
 ## Usage
@@ -60,9 +60,13 @@ const (
 	upload_dir   = os.abs_path('uploads') // where you want to store uploads
 )
 
+// Your theme settings
+struct Theme{}
+
 // Base app for Vaunt which you can extend
 struct App {
 	vweb.Context
+	vaunt.Util
 pub:
 	controllers  []&vweb.ControllerPath
 	template_dir string                 [vweb_global]
@@ -70,14 +74,18 @@ pub:
 pub mut:
 	db     pg.DB  [vweb_global]
 	dev    bool   [vweb_global] // used by Vaunt internally
+	theme  Theme // Theme settings
 	s_html string // used by Vaunt to generate html
 }
 
 fn main() {
 	// insert your own credentials
 	db := pg.connect(user: 'dev', password: 'password', dbname: 'vaunt')!
+	
+	theme := Theme{}
+	
 	// setup database and controllers
-	controllers := vaunt.init(db, template_dir, upload_dir)!
+	controllers := vaunt.init(db, template_dir, upload_dir, theme)!
 
 	// create the app
 	mut app := &App{
@@ -102,9 +110,118 @@ As you can see a Vaunt app is just a Vweb app with some predefined properties.
 And you can add other properties and methods to `App` as it is a regular Vweb application.
 The controllers that are generated control the api, admin panel and file uploads.
 
+You can start the application with `v watch run main.v` for single files. If you have 
+multiple `.v` files you can put them in the `src` folder and run `v watch run src`.
+
 ## Admin panel
 The admin panel is used to created articles via a visual editor. You can access the 
 admin panel by navigating to `"/admin"`. The UI should be self-explanatory.
+
+## Theme Settings
+It is possible to make you theme configurable in the admin panel.
+
+[insert gif]
+
+All fields of the `Theme` will be saved in the database and rendered in the admin panel.
+
+### Colors
+You can add a color option with the type `vaunt.Color`. For example we could
+modify the `Theme` struct from the earlier example to include a background color:
+
+```v oksyntax
+struct Theme {
+pub mut:
+	background vaunt.Color
+}
+```
+
+### Class Lists
+Let's say we want the option to display navigation links aligned left, centered
+or right. We can use the `ClassList` struct for that.
+
+**Example:**
+```v oksyntax
+struct Theme {
+pub mut:
+    background vaunt.Color
+    nav_align  vaunt.ClassList
+}
+
+// ...
+
+fn main() {
+    // ...
+    theme := Theme{
+		background: '#ffffff'
+		nav_align: vaunt.ClassList{
+			name: 'Navigation links aligmnent'
+			selected: 'nav-center'
+			options: {
+				'nav-left':   'left'
+				'nav-center': 'center'
+				'nav-right':  'right'
+			}
+		}
+	}
+    // ...
+}
+```
+
+In the example above the default background color is set to white and the options
+for the navigation links are set as following: 
+
+`name` will be the name displayed in the admin panel.
+`selected` will be the default option
+`options` is a map where the keys are the class names and the values are the names 
+displayed in the admin panel.
+
+### Usage
+
+Using the vweb's `before_request` middleware you can fetch the latest theme settings
+before the page is rendered. See the 
+[Vaunt default theme](https://github.com/Casper64/vaunt-default) for a more 
+comprehensive implementation.
+
+**Example:**
+
+```v ignore
+// fetch the new latest theme before processing a request
+pub fn (mut app App) before_request() {
+	// only update when request is a route, assuming all resources contain a "."
+	if app.req.url.contains('..') == false {
+		colors_css := vaunt.update_theme(app.db, mut app.theme)
+		// store the generated css
+		app.styles << colors_css
+	}
+}
+```
+
+All options are available in templates using `app.theme`.
+
+**Example:**
+```html
+<nav class="@{app.theme.nav_align.selected}"></nav>
+```
+Will produce:
+```html
+<nav class="nav-center"></nav>
+```
+
+The colors are generated as css variable. The return value of `vaunt.update_theme` 
+(`app.styles` is an array). will be
+```css
+:root {
+    --color-background: #ffffff;
+}
+```
+You can put this css directly into your html
+```html
+<head>
+    @for style in app.styles
+    <style>@{style}</style>
+    @end
+</head>
+```
 
 ## Routing
 When creating a route the html that is returned must be save in `app.s_html`
@@ -159,7 +276,7 @@ Currently custom dynamic routes are not supported.
 You can generate the static site by passing the `--generate` flag or `-g` for short.
 All files needed to host your website will be in the generated `public` directory.
 ```
-v run [project.v] --generate
+v run [project] --generate
 ```
 
 ## Api
@@ -188,6 +305,22 @@ pub mut:
 	name       string [nonull]
 	src        string [nonull]
 	article_id int    [nonull]
+}
+```
+
+### Theme Types
+
+```v oksyntax
+pub type Color = string
+
+// options of classes
+pub struct ClassList {
+pub:
+	name string
+	// key is the option name displayed in the editor and the value is the class
+	options map[string]string
+pub mut:
+	selected string
 }
 ```
 
