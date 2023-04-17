@@ -317,7 +317,8 @@ pub type Color = string
 pub struct ClassList {
 pub:
 	name string
-	// key is the option name displayed in the editor and the value is the class
+	// The value is the option name displayed in the editor 
+	// and the key is the class name
 	options map[string]string
 pub mut:
 	selected string
