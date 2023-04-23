@@ -6,12 +6,6 @@ import os
 import flag
 import time
 
-const (
-	vexe             = os.getenv('VEXE')
-	port             = 8080
-	generator_server = 'http://127.0.0.1:${port}'
-)
-
 pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T) ![]&vweb.ControllerPath {
 	init_database(db)!
 	update_theme_db(db, theme)!

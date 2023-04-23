@@ -31,21 +31,103 @@ fn cors(mut ctx vweb.Context) bool {
 	return true
 }
 
+// 			Categories
+// ==========================
+['/categories'; get; options]
+pub fn (mut app Api) get_categories() vweb.Result {
+	categories := get_all_categories(mut app.db)
+	return app.json(categories)
+}
+
+['/categories'; post]
+pub fn (mut app Api) create_category() vweb.Result {
+	if is_empty('name', app.form) {
+		app.set_status(400, '')
+		return app.text('error: field "name" is required')
+	}
+
+	mut new_category := Category{
+		name: app.form['name']
+	}
+
+	sql app.db {
+		insert new_category into Category
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not make new category, please try again later.')
+	}
+
+	new_category.id = app.db.last_id()
+	return app.json(new_category)
+}
+
+['/categories/:category_id'; get; options]
+pub fn (mut app Api) get_category(category_id int) vweb.Result {
+	rows := sql app.db {
+		select from Category where id == category_id
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not get category')
+	}
+
+	if rows.len == 0 {
+		return app.not_found()
+	} else {
+		return app.json(rows[0])
+	}
+}
+
+['/categories/:category_id'; delete]
+pub fn (mut app Api) delete_category(category_id int) vweb.Result {
+	sql app.db {
+		delete from Category where id == category_id
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not delete category')
+	}
+
+	return app.ok('ok')
+}
+
+['/categories/:category_id'; put]
+pub fn (mut app Api) update_category(category_id int) vweb.Result {
+	if is_empty('name', app.form) {
+		app.set_status(400, '')
+		return app.text('error: field "name" is required')
+	}
+
+	new_name := app.form['name']
+	sql app.db {
+		update Category set name = new_name where id == category_id
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not update category')
+	}
+
+	return app.ok('ok')
+}
+
 // 			Articles
 // ==========================
 
-// options request is only sent once??? Or per route
 ['/articles'; get; options]
 pub fn (mut app Api) get_articles() vweb.Result {
-	articles := get_all_articles(mut app.db)
-	return app.json(articles)
+	if is_empty('category', app.query) {
+		articles := get_all_articles(mut app.db)
+		return app.json(articles)
+	} else {
+		category_id := app.query['category'].int()
+		articles := get_all_articles_by_category(mut app.db, category_id)
+		return app.json(articles)
+	}
 }
 
 ['/articles'; post]
 pub fn (mut app Api) create_article() vweb.Result {
-	if is_empty('name', app.form) || is_empty('description', app.form) {
+	if is_empty('name', app.form) || is_empty('description', app.form)
+		|| is_empty('category', app.form) {
 		app.set_status(400, '')
-		return app.text('error: field "name" and "description" are required')
+		return app.text('error: field "name", "description" and "category" are required')
 	}
 	if is_empty('block_data', app.form) {
 		app.set_status(400, '')
@@ -54,6 +136,7 @@ pub fn (mut app Api) create_article() vweb.Result {
 
 	new_article := Article{
 		name: app.form['name']
+		category_id: app.form['category'].int()
 		description: app.form['description']
 		block_data: app.form['block_data']
 	}
@@ -151,12 +234,25 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 		return app.text('error: "id" is not a number')
 	}
 
+	// change visibility
 	if is_empty('show', app.form) == false {
 		showing := app.form['show']
 		sql app.db {
 			update Article set show = showing where id == article_id
 		} or {
-			app.set_status(400, '')
+			app.set_status(500, '')
+			return app.text('error: cannot change visibility')
+		}
+		return app.ok('')
+	}
+
+	// change category
+	if is_empty('category', app.form) == false {
+		new_category := app.form['category'].int()
+		sql app.db {
+			update Article set category_id = new_category where id == article_id
+		} or {
+			app.set_status(500, '')
 			return app.text('error: cannot change visibility')
 		}
 		return app.ok('')
@@ -492,10 +588,34 @@ fn is_empty(key string, form map[string]string) bool {
 	return form[key] == '' || form[key] == 'undefined'
 }
 
+// get all categories
+pub fn get_all_categories(mut db pg.DB) []Category {
+	mut categories := sql db {
+		select from Category order by name
+	} or { []Category{} }
+
+	return categories
+}
+
 // get all articles
 pub fn get_all_articles(mut db pg.DB) []Article {
 	mut articles := sql db {
 		select from Article order by created_at desc
+	} or { []Article{} }
+
+	for mut article in articles {
+		if article.thumbnail != 0 {
+			img := get_image(mut db, article.thumbnail) or { Image{} }
+			article.image_src = img.src
+		}
+	}
+	return articles
+}
+
+// get all articles by category id
+pub fn get_all_articles_by_category(mut db pg.DB, category int) []Article {
+	mut articles := sql db {
+		select from Article where category_id == category order by created_at desc
 	} or { []Article{} }
 
 	for mut article in articles {
