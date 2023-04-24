@@ -9,3 +9,4 @@
 - [ ] Add more utility functions for app templates, like url reversing.
 - [ ] Allow custom blocks
 - [X] Allow theme settings in admin panel
+- [ ] Add SEO e.g. `robots.txt`, `sitemap.xml`
