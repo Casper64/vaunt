@@ -6,14 +6,17 @@ import type { CreateArticle } from 'env';
 import { computed } from 'vue';
 import { ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { userCategoryStore } from '@/stores/category';
 
 const store = useArticleStore()
+const categoryStore = userCategoryStore()
 const route = useRoute()
 const complete = ref(false)
 
 const article = computed(() => {
     return store.get(route.params['id'])!
 })
+const currentCategory = ref(article.value.category_id)
 
 const showStatus = ref(article.value.show ? 'Hide Article' : 'Show Article')
 
@@ -63,6 +66,20 @@ async function changeVisibility() {
 
 const thumbnailSource = ref(import.meta.env.VITE_BASE_URL+article.value.image_src)
 
+const categoryOptions = computed(() => {
+    let obj: any = [{
+        label: '[No Category]',
+        value: 0
+    }];
+    categoryStore.categories.forEach(c => {
+        obj.push({
+            label: c.name,
+            value: c.id
+        })
+    })
+    return obj
+})
+
 
 </script>
 
@@ -71,6 +88,14 @@ const thumbnailSource = ref(import.meta.env.VITE_BASE_URL+article.value.image_sr
     <h1>Change Article</h1>
     <FormKit type="form" @submit="submitHandler" submit-label="Update">
         <FormKit type="text" name="name" id="name" validation="required" label="Name" placeholder="Article Name" :value="article.name" />
+        <FormKit
+                type="select"
+                label="Article Category"
+                name="category_id"
+                placeholder="Select a category (not required)"
+                v-model="currentCategory"
+                :options="categoryOptions"
+            />
         <FormKit type="textarea" rows="10" name="description" id="description" validation="required" label="Description"
             :value="article.description" />
 

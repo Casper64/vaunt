@@ -69,7 +69,7 @@ async function publishHandler() {
             <!-- <router-link :to="`/admin/settings/${article.id}`">
                 <FormKit type="button">Settings</FormKit>
             </router-link> -->
-            <FormKit type="button" @click="deletePost">Delete</FormKit>
+            <FormKit outer-class="delete-btn" type="button" @click="deletePost">Delete</FormKit>
         </div>
     </div>
 </template>
@@ -136,6 +136,15 @@ async function publishHandler() {
         max-height: 180px;
         // aspect-ratio: ;
     }
+}
+
+</style>
+
+
+<style lang="scss">
+
+.delete-btn .formkit-input {
+    background: red !important;
 }
 
 </style>

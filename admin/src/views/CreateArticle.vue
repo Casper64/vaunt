@@ -3,8 +3,11 @@ import { ref } from 'vue'
 import { FormKit } from '@formkit/vue'
 import { useRouter } from 'vue-router';
 import { useArticleStore } from '@/stores/article';
+import { userCategoryStore } from '@/stores/category';
+import { computed } from 'vue';
 
 const articleStore = useArticleStore()
+const categoryStore = userCategoryStore()
 const router = useRouter()
 
 const errorMessage = ref('')
@@ -22,6 +25,17 @@ const submitHandler = async (data: any) => {
         complete.value = true
     }
 }
+
+const categoryOptions = computed(() => {
+    let obj: any = [];
+    categoryStore.categories.forEach(c => {
+        obj.push({
+            label: c.name,
+            value: c.id
+        })
+    })
+    return obj
+})
 
 </script>
 
@@ -59,7 +73,14 @@ const submitHandler = async (data: any) => {
                 label="Thumbnail" 
                 name="thumbnail" 
                 help="Add a thumnbnail image"
-                />
+            />
+            <FormKit
+                type="select"
+                label="Article Category"
+                name="category_id"
+                placeholder="Select a category (not required)"
+                :options="categoryOptions"
+            />
             <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
         </FormKit>
     </div>

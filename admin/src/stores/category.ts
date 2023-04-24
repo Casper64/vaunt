@@ -21,7 +21,13 @@ export const userCategoryStore = defineStore('category', {
         get(id: any) {
             return this.categories.find(c => c.id == id)
         },
-        async create(data: CreateCategory) {
+        async create(data: any) {
+            for (const key in data) {
+                if (typeof data[key] == 'string') {
+                    data[key] = data[key].replace(/\r/g, "");
+                }
+            }
+
             const body = new FormData()
             body.append('name', data.name)
 
@@ -34,7 +40,13 @@ export const userCategoryStore = defineStore('category', {
             await axios.delete(`/categories/${id}`)
             this.categories = this.categories.filter(c => c.id != id)
         },
-        async update(id: number, data: CreateCategory) {
+        async update(id: number, data: any) {
+            for (const key in data) {
+                if (typeof data[key] == 'string') {
+                    data[key] = data[key].replace(/\r/g, "");
+                }
+            }
+
             const currentCategory = this.get(id)
 
             if (currentCategory) {

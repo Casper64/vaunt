@@ -77,13 +77,21 @@ pub fn (mut app Api) get_category(category_id int) vweb.Result {
 	}
 }
 
-['/categories/:category_id'; delete]
-pub fn (mut app Api) delete_category(category_id int) vweb.Result {
+['/categories/:cat_id'; delete]
+pub fn (mut app Api) delete_category(cat_id int) vweb.Result {
 	sql app.db {
-		delete from Category where id == category_id
+		delete from Category where id == cat_id
 	} or {
 		app.set_status(500, '')
 		return app.text('error: could not delete category')
+	}
+
+	// update articles category_id
+	sql app.db {
+		update Article set category_id = 0 where category_id == cat_id
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not update articles')
 	}
 
 	return app.ok('ok')
@@ -124,21 +132,24 @@ pub fn (mut app Api) get_articles() vweb.Result {
 
 ['/articles'; post]
 pub fn (mut app Api) create_article() vweb.Result {
-	if is_empty('name', app.form) || is_empty('description', app.form)
-		|| is_empty('category', app.form) {
+	if is_empty('name', app.form) || is_empty('description', app.form) {
 		app.set_status(400, '')
-		return app.text('error: field "name", "description" and "category" are required')
+		return app.text('error: field "name" and "description" are required')
 	}
 	if is_empty('block_data', app.form) {
 		app.set_status(400, '')
 		return app.text('error: must provide default "block_data" when creating an article')
 	}
 
-	new_article := Article{
+	mut new_article := Article{
 		name: app.form['name']
 		category_id: app.form['category'].int()
 		description: app.form['description']
 		block_data: app.form['block_data']
+	}
+
+	if 'category_id' in app.form {
+		new_article.category_id = app.form['category_id'].int()
 	}
 
 	sql app.db {
@@ -247,15 +258,14 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 	}
 
 	// change category
-	if is_empty('category', app.form) == false {
-		new_category := app.form['category'].int()
+	if is_empty('category_id', app.form) == false {
+		new_category := app.form['category_id'].int()
 		sql app.db {
 			update Article set category_id = new_category where id == article_id
 		} or {
 			app.set_status(500, '')
 			return app.text('error: cannot change visibility')
 		}
-		return app.ok('')
 	}
 
 	// check if article exists
@@ -304,16 +314,19 @@ fn (mut app Api) upload_image(article_id int, file_key string, img_name string) 
 	img_dir := os.join_path(app.upload_dir, 'img')
 	fdata := app.files[file_key][0].data.bytes()
 
+	replaced_name := img_name.replace('\r', '')
+
 	os.mkdir_all(img_dir)!
-	file_path := os.join_path(img_dir, img_name)
+	file_path := os.join_path(img_dir, replaced_name)
 
 	mut f := os.create(file_path)!
 	f.write(fdata)!
 	f.close()
 
-	upload_path := 'uploads/img/${img_name}'
+	// have to do this because windows appends a \r when posting FORMDATA???
+	upload_path := 'uploads/img/${replaced_name}'
 	img := Image{
-		name: img_name
+		name: replaced_name
 		src: upload_path
 		article_id: article_id
 	}
@@ -501,7 +514,7 @@ pub fn (mut app Api) upload_image_endpoint() vweb.Result {
 		return app.text('error: field "image" is required in files')
 	}
 
-	fdata := app.files['image'][0]
+	mut fdata := app.files['image'][0]
 	if fdata.filename == '' {
 		app.set_status(400, '')
 		return app.text('error: must provide an image name')
@@ -595,6 +608,18 @@ pub fn get_all_categories(mut db pg.DB) []Category {
 	} or { []Category{} }
 
 	return categories
+}
+
+pub fn get_category_by_id(mut db pg.DB, category_id int) !Category {
+	mut rows := sql db {
+		select from Category where id == category_id
+	} or { []Category{} }
+
+	if rows.len == 0 {
+		return error('Category does not exist')
+	} else {
+		return rows[0]
+	}
 }
 
 // get all articles
