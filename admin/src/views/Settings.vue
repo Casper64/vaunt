@@ -31,6 +31,7 @@ async function deleteCategory(id: number) {
 <template>
     <div class="settings-container">
         <h1>Settings</h1>
+
         <div class="categories">
             <h2>Manage Categories</h2>
             <template v-for="category in categoryStore.categories">
@@ -38,9 +39,8 @@ async function deleteCategory(id: number) {
                     <h3>{{  category.name }}</h3>
                     <FormKit 
                         type="form"
-                        style="width: 25em;"
                         @submit="(data) => submitHandler(data, category.id)"
-                        submit-label="Update"
+                        submit-label="Change name"
                     >
                         <FormKit 
                             type="text" 
@@ -55,9 +55,47 @@ async function deleteCategory(id: number) {
                     <FormKit outer-class="delete-btn" type="button" @click="() => deleteCategory(category.id)">Delete</FormKit>
                 </div>
             </template>
+            <router-link to="/admin/create-category" class="add-category-btn">
+                <FormKit type="button" prefix-icon="add">Add Category</FormKit>
+            </router-link>
         </div>
     </div>
 </template>
+
+<style scoped lang="scss">
+
+.settings-container {
+    max-width: 1100px;
+    margin: auto;
+    width: 100%;
+    height: calc(100vh - 80px);
+    display: grid;
+    grid-template-rows: auto 1fr;
+    justify-items: center;
+    padding: 50px;
+    row-gap: 20px;
+}
+
+.categories {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: max-content;
+    column-gap: 20px;
+    row-gap: 20px;
+    align-items: center;
+    justify-items: center;
+
+    & > h2 {
+        grid-column: span 3;
+    }
+
+    .update-category {
+        width: 250px;
+    }
+}
+
+</style>
 
 <style lang="scss">
 

@@ -123,11 +123,16 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 					eprintln('error: expecting method "article_page" to be a dynamic route that starts with "/articles/"')
 					return
 				}
+			} else if method.name == 'category_article_page' {
+				if method.attrs.any(it.starts_with('/articles/:')) == false {
+					eprintln('error: expecting method "category_article_page" to be a dynamic route that starts with "/articles/"')
+					return
+				}
 			} else if method.attrs.any(it.contains(':')) {
 				eprintln('error while generating "${method.name}": generating custom dynamic routes is not supported yet!')
 			} else if method.attrs.len > 1 {
 				eprintln('error while generating "${method.name}": custom routes can only have 1 property: the route')
-			} else {
+			} else if method.name != 'not_found' {
 				i_start := time.ticks()
 
 				mut route := method.name
@@ -167,8 +172,10 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 	}
 	// articles
 	if 'article_page' !in routes {
-		eprintln('[Vaunt] Error: expecting method "article_page (int) vweb.Result" on "${T.name}"${std_msg}')
+		eprintln('[Vaunt] Error: expecting method "article_page (string) vweb.Result" on "${T.name}"${std_msg}')
 		return
+	} else if 'category_article_page' !in routes {
+		eprintln('[Vaunt] Error: expecting method "category_article_page (string, string) vweb.Result" on "${T.name}"${std_msg}')
 	} else {
 		println('[Vaunt] Generating article pages...')
 		generate_articles(mut app, dist_path) or { panic(err) }
@@ -196,25 +203,58 @@ fn generate_articles[T](mut app T, dist_path string) ! {
 		// generate the article html
 		file_art := generate(article.block_data)
 
-		file_path := os.join_path(app.template_dir, 'articles', '${article.id}.html')
+		mut category := Category{}
+
+		mut file_path := ''
+		mut article_path := ''
+		// add category name to the path if article has a category
+		if article.category_id == 0 {
+			file_path = os.join_path(app.template_dir, 'articles', '${article.name}.html')
+			article_path = '${article.name}.html'
+		} else {
+			category = get_category_by_id(mut app.db, article.category_id) or {
+				eprintln('warning: category of article "${article.name}" does not exist!')
+				continue
+			}
+			file_path = os.join_path(app.template_dir, 'articles', category.name, '${article.name}.html')
+			article_path = '${category.name}/${article.name}.html'
+		}
+
+		// always convert paths to lowercase and replace spaces by '-'
+		file_path = file_path.to_lower()
+		file_path = file_path.replace(' ', '-')
+		article_path = article_path.to_lower()
+		article_path = article_path.replace(' ', '-')
+
+		// create all directories for the category
+		os.mkdir_all(os.dir(file_path)) or { return error('file "${file_path}" is not writeable') }
+
 		mut f_art := os.create(file_path) or {
 			return error('file "${file_path}" is not writeable')
 		}
 		f_art.write_string(file_art) or {
-			return error('could not write file "${article.id}.html"')
+			return error('could not write file "${article.name}.html"')
 		}
 		f_art.close()
 
 		// get html
-		article_path := os.join_path(articles_path, '${article.id}.html')
-		os.mkdir_all(os.dir(article_path))!
+		article_file_path := os.join_path(articles_path, article_path)
+		os.mkdir_all(os.dir(article_file_path))!
 
-		app.article_page(article.id)
+		// no category
+		article_name := article.name.to_lower().replace(' ', '-')
+		if category.id == 0 {
+			app.article_page(article_name)
+		} else {
+			category_name := category.name.to_lower().replace(' ', '-')
+			app.category_article_page(category_name, article_name)
+		}
+
 		if app.s_html.len == 0 {
 			eprintln('warning: article "${article.name}" produced no html! Did you forget to set `app.s_html`?')
 		}
 
-		mut f := os.create(article_path) or { panic(err) }
+		mut f := os.create(article_file_path) or { panic(err) }
 		f.write(app.s_html.bytes())!
 		f.close()
 

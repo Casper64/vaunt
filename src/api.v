@@ -47,7 +47,7 @@ pub fn (mut app Api) create_category() vweb.Result {
 	}
 
 	mut new_category := Category{
-		name: app.form['name']
+		name: app.form['name'].replace('\r', '')
 	}
 
 	sql app.db {
@@ -104,7 +104,7 @@ pub fn (mut app Api) update_category(category_id int) vweb.Result {
 		return app.text('error: field "name" is required')
 	}
 
-	new_name := app.form['name']
+	new_name := app.form['name'].replace('\r', '')
 	sql app.db {
 		update Category set name = new_name where id == category_id
 	} or {
@@ -142,9 +142,9 @@ pub fn (mut app Api) create_article() vweb.Result {
 	}
 
 	mut new_article := Article{
-		name: app.form['name']
+		name: app.form['name'].replace('\r', '')
 		category_id: app.form['category'].int()
-		description: app.form['description']
+		description: app.form['description'].replace('\r', '')
 		block_data: app.form['block_data']
 	}
 
@@ -295,8 +295,8 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 		}
 	}
 
-	article_name := app.form['name']
-	article_descr := app.form['description']
+	article_name := app.form['name'].replace('\r', '')
+	article_descr := app.form['description'].replace('\r', '')
 	sql app.db {
 		update Article set name = article_name, description = article_descr where id == article_id
 	} or {
@@ -471,7 +471,27 @@ pub fn (mut app Api) publish_article() vweb.Result {
 	blocks := article.block_data
 	file := generate(blocks)
 
-	file_path := os.join_path(app.template_dir, 'articles', '${article_id}.html')
+	// set file path accordingly when article has a category or not
+	mut file_path := ''
+	if article.category_id == 0 {
+		file_path = os.join_path(app.template_dir, 'articles', '${article.name}.html')
+	} else {
+		category := get_category_by_id(mut app.db, article.category_id) or {
+			app.set_status(400, '')
+			return app.text('error: category does not exist!')
+		}
+		file_path = os.join_path(app.template_dir, 'articles', category.name, '${article.name}.html')
+	}
+	// always convert paths to lowercase and replace spaces by '-'
+	file_path = file_path.to_lower()
+	file_path = file_path.replace(' ', '-')
+
+	// create all directories for the category
+	os.mkdir_all(os.dir(file_path)) or {
+		app.set_status(500, 'file "${file_path}" is not writeable')
+		return app.text('error writing file...')
+	}
+
 	mut f := os.create(file_path) or {
 		app.set_status(500, 'file "${file_path}" is not writeable')
 		return app.text('error writing file...')
@@ -666,6 +686,25 @@ pub fn get_article(mut db pg.DB, article_id int) !Article {
 		articles[0].image_src = img.src
 	}
 	return articles[0]
+}
+
+// gewt an article by name
+pub fn get_article_by_name(mut db pg.DB, article_name string) !Article {
+	println(article_name)
+	mut articles := get_all_articles(mut db)
+
+	for article in articles {
+		if article.name.to_upper() == article_name.to_upper() {
+			if articles[0].thumbnail != 0 {
+				img := get_image(mut db, articles[0].thumbnail) or { Image{} }
+				articles[0].image_src = img.src
+			}
+
+			return article
+		}
+	}
+
+	return error('article was not found')
 }
 
 // get image by id
