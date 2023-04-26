@@ -72,8 +72,8 @@ pub:
 	template_dir string                 [vweb_global]
 	upload_dir   string                 [vweb_global]
 pub mut:
-	db     pg.DB  [vweb_global]
 	dev    bool   [vweb_global] // used by Vaunt internally
+	db     pg.DB
 	theme  Theme // Theme settings
 	s_html string // used by Vaunt to generate html
 }
@@ -229,29 +229,57 @@ before returning. If you forget to store the generated html in `app.s_html`
 the generated output of the static site won't contain your html.
 
 The following routes **must** be defined for the site generation to work:
-- Article Page
+- Route for article with a category
+- Route for article without a category
 
-### Article Page
-A method with name `article_page` and dynamic route "/articles/:article_id".
-`article_page` is used to generate the html page for each article.
+### Article with a category
+A method with name `category_article_page` and dynamic route 
+`"/articles/:category_name/:article_name"`. `category_article_page` is used to 
+generate the html page for each article that belongs to a category.
 
 If you press the `publish` button in the admin panel the html will be generated
-and outputted to  `"[template_dir]/articles/[article_id].html"`.
+and outputted to  `"[template_dir]/articles/[category_name]/[article_name].html"`.
 
-**Example**
+**Example:**
 ```v ignore
-['/articles/:article_id']
-pub fn (mut app App) article_page(article_id int) vweb.Result {
-    article_file := os.join_path(app.template_dir, 'articles', '${article_id}.html')
-    // read the generated article html file
+['/articles/:category_name/:article_name']
+pub fn (mut app App) category_article_page(category_name string, article_name string) vweb.Result {
+	article_file := os.join_path(app.template_dir, 'articles', category_name, '${article_name}.html')
+	// read the generated article html file
+	
 	content := os.read_file(article_file) or {
 		eprintln(err)
 		return app.not_found()
 	}
 
-    // save html in `app.s_html` first before returning it
-    app.s_html = content
-    return app.html(content)
+	// save html in `app.s_html` first before returning it
+	app.s_html = content
+	return app.html(content)
+}
+```
+
+### Article without a category
+A method with name `article_page` and dynamic route `"/articles/:article_name"`.
+`article_page` is used to generate the html page for each article.
+
+If you press the `publish` button in the admin panel the html will be generated
+and outputted to  `"[template_dir]/articles/[article_name].html"`.
+
+**Example**
+```v ignore
+['/articles/:article_name']
+pub fn (mut app App) article_page(article_name string) vweb.Result {
+	article_file := os.join_path(app.template_dir, 'articles', '${article_name}.html')
+	
+	// read the generated article html file
+	content := os.read_file(article_file) or {
+		eprintln(err)
+		return app.not_found()
+	}
+
+	// save html in `app.s_html` first before returning it
+	app.s_html = content
+	return app.html(content)
 }
 ```
 

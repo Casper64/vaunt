@@ -441,6 +441,10 @@ fn test_delete_image() {
 	}
 }
 
+// TODO: Categories
+// 		Categories
+// ======================
+
 fn testsuite_end() {
 	// This test is guaranteed to be called last.
 	// It sends a request to the server to shutdown.

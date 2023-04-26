@@ -6,12 +6,6 @@ import os
 import flag
 import time
 
-const (
-	vexe             = os.getenv('VEXE')
-	port             = 8080
-	generator_server = 'http://127.0.0.1:${port}'
-)
-
 pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T) ![]&vweb.ControllerPath {
 	init_database(db)!
 	update_theme_db(db, theme)!
@@ -129,11 +123,16 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 					eprintln('error: expecting method "article_page" to be a dynamic route that starts with "/articles/"')
 					return
 				}
+			} else if method.name == 'category_article_page' {
+				if method.attrs.any(it.starts_with('/articles/:')) == false {
+					eprintln('error: expecting method "category_article_page" to be a dynamic route that starts with "/articles/"')
+					return
+				}
 			} else if method.attrs.any(it.contains(':')) {
 				eprintln('error while generating "${method.name}": generating custom dynamic routes is not supported yet!')
 			} else if method.attrs.len > 1 {
 				eprintln('error while generating "${method.name}": custom routes can only have 1 property: the route')
-			} else {
+			} else if method.name != 'not_found' {
 				i_start := time.ticks()
 
 				mut route := method.name
@@ -173,8 +172,10 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 	}
 	// articles
 	if 'article_page' !in routes {
-		eprintln('[Vaunt] Error: expecting method "article_page (int) vweb.Result" on "${T.name}"${std_msg}')
+		eprintln('[Vaunt] Error: expecting method "article_page (string) vweb.Result" on "${T.name}"${std_msg}')
 		return
+	} else if 'category_article_page' !in routes {
+		eprintln('[Vaunt] Error: expecting method "category_article_page (string, string) vweb.Result" on "${T.name}"${std_msg}')
 	} else {
 		println('[Vaunt] Generating article pages...')
 		generate_articles(mut app, dist_path) or { panic(err) }
@@ -190,37 +191,52 @@ fn generate_articles[T](mut app T, dist_path string) ! {
 	os.mkdir(articles_path)!
 
 	mut articles := get_all_articles(mut app.db)
-	for mut article in articles {
+	for article in articles {
 		if article.show == false {
 			continue
 		}
-		// windows saving only as '\r' in the editor??
-		article.name = article.name.replace('\r', '')
-
 		a_start := time.ticks()
 
 		// generate the article html
 		file_art := generate(article.block_data)
 
-		file_path := os.join_path(app.template_dir, 'articles', '${article.id}.html')
+		file_path, mut article_path := get_publish_paths(mut app.db, app.template_dir,
+			article) or {
+			eprintln('warning: category of article "${article.name}" does not exist!')
+			continue
+		}
+
+		// create all directories for the category
+		os.mkdir_all(os.dir(file_path)) or { return error('file "${file_path}" is not writeable') }
+
 		mut f_art := os.create(file_path) or {
 			return error('file "${file_path}" is not writeable')
 		}
 		f_art.write_string(file_art) or {
-			return error('could not write file "${article.id}.html"')
+			return error('could not write file "${article.name}.html"')
 		}
 		f_art.close()
 
 		// get html
-		article_path := os.join_path(articles_path, '${article.id}.html')
-		os.mkdir_all(os.dir(article_path))!
+		article_path += '.html'
+		article_file_path := os.join_path(articles_path, article_path)
+		os.mkdir_all(os.dir(article_file_path))!
 
-		app.article_page(article.id)
+		// no category
+		article_name := sanitize_path(article.name)
+		if article.category_id == 0 {
+			app.article_page(article_name)
+		} else {
+			category := get_category_by_id(mut app.db, article.category_id)!
+			category_name := sanitize_path(category.name)
+			app.category_article_page(category_name, article_name)
+		}
+
 		if app.s_html.len == 0 {
 			eprintln('warning: article "${article.name}" produced no html! Did you forget to set `app.s_html`?')
 		}
 
-		mut f := os.create(article_path) or { panic(err) }
+		mut f := os.create(article_file_path)!
 		f.write(app.s_html.bytes())!
 		f.close()
 

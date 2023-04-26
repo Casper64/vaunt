@@ -21,10 +21,18 @@ export const useArticleStore = defineStore('article', {
         get(id : any) {
             return this.articles.find(a => a.id == id)
         },
-        async create(data : any) {
+        async create(data: any) {
+            for (const key in data) {
+                if (typeof data[key] == 'string') {
+                    data[key] = data[key].replace(/\r/g, "");
+                }
+            }
+
             const body = new FormData()
             body.append('name', data.name)
             body.append('description', data.description)
+            body.append('category_id', String(data.category_id) || '0')
+
 
             // create standard title block with the text equal to the article name
             const blocks = `[{"id":"e_sTVYXqiN","type":"heading","data":{"text":"${
@@ -50,12 +58,19 @@ export const useArticleStore = defineStore('article', {
             this.articles = this.articles.filter(a => a.id != id)
         },
         // update an articles name, desecription and/or thumbnail image
-        async update(id : number, data : CreateArticle) {
+        async update(id : number, data : any) {
+            for (const key in data) {
+                if (typeof data[key] == 'string') {
+                    data[key] = data[key].replace(/\r/g, "");
+                }
+            }
+
             let currentArticle = this.get(id)
             if (currentArticle) {
                 const body = new FormData()
                 body.append('name', data.name)
                 body.append('description', data.description)
+                body.append('category_id', String(data.category_id))
 
                 let name = ''
                 data.thumbnail.forEach((fileItem : any) => {
@@ -69,12 +84,25 @@ export const useArticleStore = defineStore('article', {
                 // hardcoded for reactivity without page reload
                 currentArticle.name = data.name
                 currentArticle.description = data.description
+                currentArticle.category_id = data.category_id || 0
                 if (name) {
                     currentArticle.image_src = `uploads/img/${name}`
                 }
                 return true
             }
             return false
+        },
+        async changeCategory(id: number, category: number) {
+            const currentArticle = this.get(id)
+
+            if (currentArticle) {
+                const body = new FormData()
+            
+                body.append('category', String(category))
+                await axios.put(`/articles/${id}`, body)
+
+                currentArticle.category_id = category
+            }
         },
         async publish(article_id : number) { 
             // wait for save

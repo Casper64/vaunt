@@ -8,9 +8,17 @@ declare module 'vue' {
     }
 }
 
+interface Category {
+    id: number
+    name: string
+}
+
+type CreateCategory = Pick<Category, 'name'>
+
 interface Article {
     id: number
     name:  string
+    category_id: number
     block_data: string
     description: string
     show: boolean
@@ -20,7 +28,7 @@ interface Article {
     updated_at: string
 }
 
-type CreateArticle = Pick<Article, 'name' | 'description' | 'thumbnail'>
+type CreateArticle = Pick<Article, 'name' | 'description' | 'thumbnail' | 'category_id'>
 
 type ThemeOptionType = 'Color' | 'ClassList'
 

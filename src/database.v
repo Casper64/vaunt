@@ -6,10 +6,18 @@ fn init_database(db &pg.DB) ! {
 	println('[Vaunt] Starting db...')
 
 	sql db {
+		create table Category
 		create table Article
 		create table Image
 		create table ThemeOption
 	}!
+}
+
+[table: 'categories']
+pub struct Category {
+pub mut:
+	id   int    [primary; sql: serial]
+	name string [unique]
 }
 
 [table: 'articles']
@@ -17,6 +25,7 @@ pub struct Article {
 pub mut:
 	id          int    [primary; sql: serial]
 	name        string [unique]
+	category_id int
 	description string
 	show        bool
 	thumbnail   int

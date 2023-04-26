@@ -31,14 +31,113 @@ fn cors(mut ctx vweb.Context) bool {
 	return true
 }
 
+// 			Categories
+// ==========================
+['/categories'; get; options]
+pub fn (mut app Api) get_categories() vweb.Result {
+	categories := get_all_categories(mut app.db)
+	return app.json(categories)
+}
+
+['/categories'; post]
+pub fn (mut app Api) create_category() vweb.Result {
+	if is_empty('name', app.form) {
+		app.set_status(400, '')
+		return app.text('error: field "name" is required')
+	}
+
+	mut new_category := Category{
+		name: capitalize_text_field(app.form['name'])
+	}
+
+	check_category_article_name_collision(mut app.db, new_category.name) or {
+		app.set_status(400, '')
+		return app.text(err.msg())
+	}
+
+	sql app.db {
+		insert new_category into Category
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not make new category, please try again later.')
+	}
+
+	new_category.id = app.db.last_id()
+	return app.json(new_category)
+}
+
+['/categories/:category_id'; get; options]
+pub fn (mut app Api) get_category(category_id int) vweb.Result {
+	rows := sql app.db {
+		select from Category where id == category_id
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not get category')
+	}
+
+	if rows.len == 0 {
+		return app.not_found()
+	} else {
+		return app.json(rows[0])
+	}
+}
+
+['/categories/:cat_id'; delete]
+pub fn (mut app Api) delete_category(cat_id int) vweb.Result {
+	sql app.db {
+		delete from Category where id == cat_id
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not delete category')
+	}
+
+	// update articles category_id
+	sql app.db {
+		update Article set category_id = 0 where category_id == cat_id
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not update articles')
+	}
+
+	return app.ok('ok')
+}
+
+['/categories/:category_id'; put]
+pub fn (mut app Api) update_category(category_id int) vweb.Result {
+	if is_empty('name', app.form) {
+		app.set_status(400, '')
+		return app.text('error: field "name" is required')
+	}
+
+	new_name := capitalize_text_field(app.form['name'])
+	check_category_article_name_collision(mut app.db, new_name) or {
+		app.set_status(400, '')
+		return app.text(err.msg())
+	}
+
+	sql app.db {
+		update Category set name = new_name where id == category_id
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not update category')
+	}
+
+	return app.ok('ok')
+}
+
 // 			Articles
 // ==========================
 
-// options request is only sent once??? Or per route
 ['/articles'; get; options]
 pub fn (mut app Api) get_articles() vweb.Result {
-	articles := get_all_articles(mut app.db)
-	return app.json(articles)
+	if is_empty('category', app.query) {
+		articles := get_all_articles(mut app.db)
+		return app.json(articles)
+	} else {
+		category_id := app.query['category'].int()
+		articles := get_all_articles_by_category(mut app.db, category_id)
+		return app.json(articles)
+	}
 }
 
 ['/articles'; post]
@@ -52,19 +151,21 @@ pub fn (mut app Api) create_article() vweb.Result {
 		return app.text('error: must provide default "block_data" when creating an article')
 	}
 
-	new_article := Article{
-		name: app.form['name']
-		description: app.form['description']
+	mut new_article := Article{
+		name: sanitize_text_field(app.form['name'])
+		category_id: app.form['category'].int()
+		description: sanitize_text_field(app.form['description'])
 		block_data: app.form['block_data']
+	}
+
+	check_category_article_name_collision(mut app.db, new_article.name) or {
+		app.set_status(400, '')
+		return app.text(err.msg())
 	}
 
 	sql app.db {
 		insert new_article into Article
 	} or {
-		if err.msg().contains('unique') {
-			app.set_status(400, '')
-			return app.text('error: article with name "${new_article.name}" already exists!')
-		}
 		app.set_status(500, '')
 		return app.text('error: inserting article into database has failed')
 	}
@@ -79,7 +180,8 @@ pub fn (mut app Api) create_article() vweb.Result {
 	mut article := rows[0] as Article
 
 	if 'thumbnail' in app.files && is_empty('thumbnail-name', app.form) == false {
-		img_id, img_src := app.upload_image(article.id, 'thumbnail', app.form['thumbnail-name']) or {
+		img_name := sanitize_text_field(app.form['thumbnail-name'])
+		img_id, img_src := app.upload_image(article.id, 'thumbnail', img_name) or {
 			app.set_status(500, '')
 			return app.text('error: failed to upload image')
 		}
@@ -151,15 +253,27 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 		return app.text('error: "id" is not a number')
 	}
 
+	// change visibility
 	if is_empty('show', app.form) == false {
 		showing := app.form['show']
 		sql app.db {
 			update Article set show = showing where id == article_id
 		} or {
-			app.set_status(400, '')
+			app.set_status(500, '')
 			return app.text('error: cannot change visibility')
 		}
 		return app.ok('')
+	}
+
+	// change category
+	if is_empty('category_id', app.form) == false {
+		new_category := app.form['category_id'].int()
+		sql app.db {
+			update Article set category_id = new_category where id == article_id
+		} or {
+			app.set_status(500, '')
+			return app.text('error: cannot change visibility')
+		}
 	}
 
 	// check if article exists
@@ -175,8 +289,8 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 	}
 	if 'thumbnail' in app.files && is_empty('thumbnail-name', app.form) == false {
 		// TODO: remove old thumbnail img + plus check if its used elsewhere
-
-		img_id, _ := app.upload_image(article_id, 'thumbnail', app.form['thumbnail-name']) or {
+		img_name := sanitize_text_field(app.form['thumbnail-name'])
+		img_id, _ := app.upload_image(article_id, 'thumbnail', img_name) or {
 			app.set_status(500, '')
 			return app.text('error: failed to upload image')
 		}
@@ -189,8 +303,13 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 		}
 	}
 
-	article_name := app.form['name']
-	article_descr := app.form['description']
+	article_name := sanitize_text_field(app.form['name'])
+	check_category_article_name_collision(mut app.db, article_name) or {
+		app.set_status(400, '')
+		return app.text(err.msg())
+	}
+
+	article_descr := sanitize_text_field(app.form['description'])
 	sql app.db {
 		update Article set name = article_name, description = article_descr where id == article_id
 	} or {
@@ -208,16 +327,19 @@ fn (mut app Api) upload_image(article_id int, file_key string, img_name string) 
 	img_dir := os.join_path(app.upload_dir, 'img')
 	fdata := app.files[file_key][0].data.bytes()
 
+	replaced_name := img_name.replace('\r', '')
+
 	os.mkdir_all(img_dir)!
-	file_path := os.join_path(img_dir, img_name)
+	file_path := os.join_path(img_dir, replaced_name)
 
 	mut f := os.create(file_path)!
 	f.write(fdata)!
 	f.close()
 
-	upload_path := 'uploads/img/${img_name}'
+	// have to do this because windows appends a \r when posting FORMDATA???
+	upload_path := 'uploads/img/${replaced_name}'
 	img := Image{
-		name: img_name
+		name: replaced_name
 		src: upload_path
 		article_id: article_id
 	}
@@ -362,7 +484,18 @@ pub fn (mut app Api) publish_article() vweb.Result {
 	blocks := article.block_data
 	file := generate(blocks)
 
-	file_path := os.join_path(app.template_dir, 'articles', '${article_id}.html')
+	// set file path accordingly when article has a category or not
+	file_path, article_path := get_publish_paths(mut app.db, app.template_dir, article) or {
+		app.set_status(400, '')
+		return app.text('error: category of article "${article.name}" does not exist')
+	}
+
+	// create all directories for the category
+	os.mkdir_all(os.dir(file_path)) or {
+		app.set_status(500, 'file "${file_path}" is not writeable')
+		return app.text('error writing file...')
+	}
+
 	mut f := os.create(file_path) or {
 		app.set_status(500, 'file "${file_path}" is not writeable')
 		return app.text('error writing file...')
@@ -375,7 +508,7 @@ pub fn (mut app Api) publish_article() vweb.Result {
 
 	f.close()
 
-	return app.text('${app.articles_url}/${article.id}')
+	return app.text('${app.articles_url}/${article_path}')
 }
 
 // 			Files
@@ -405,7 +538,7 @@ pub fn (mut app Api) upload_image_endpoint() vweb.Result {
 		return app.text('error: field "image" is required in files')
 	}
 
-	fdata := app.files['image'][0]
+	mut fdata := app.files['image'][0]
 	if fdata.filename == '' {
 		app.set_status(400, '')
 		return app.text('error: must provide an image name')
@@ -439,7 +572,8 @@ pub fn (mut app Api) delete_image_endpoint() vweb.Result {
 	}
 
 	article_id := app.form['article'].int()
-	file_path := os.join_path(app.upload_dir, 'img', app.form['image'])
+	img_name := sanitize_text_field(app.form['image'])
+	file_path := os.join_path(app.upload_dir, 'img', img_name)
 
 	app.delete_image_file(article_id, file_path) or {
 		app.set_status(500, '')
@@ -480,6 +614,7 @@ fn (mut app Api) delete_image_file(article_id int, file_path string) ! {
 // 			Utility
 // ==========================
 
+// must_exist is a wrapper that returns an option if the element does not exist
 fn must_exist[T](rows []T) ?T {
 	if rows.len == 0 {
 		return none
@@ -488,14 +623,112 @@ fn must_exist[T](rows []T) ?T {
 	}
 }
 
+// is_empty can be used to check if a key in a map is undefined (interop with js)
 fn is_empty(key string, form map[string]string) bool {
 	return form[key] == '' || form[key] == 'undefined'
+}
+
+// sanitize_text_field removes unwanted characters from a text field
+fn sanitize_text_field(value string) string {
+	return value.replace('\r', '')
+}
+
+// capitalize_text_field converts `value` to lowercase and capitalizes it
+fn capitalize_text_field(value string) string {
+	mut new_value := value.to_lower()
+	new_value = new_value.capitalize()
+	return sanitize_text_field(new_value)
+}
+
+// sanitize_path converts `path` to lowercase and replaces spaces with '-'
+fn sanitize_path(path string) string {
+	mut new_path := path.to_lower()
+	new_path = new_path.replace(' ', '-')
+	return sanitize_text_field(new_path)
+}
+
+// check_category_article_name_collision returns an error if `name` collides
+// with an article or category name
+fn check_category_article_name_collision(mut db pg.DB, name string) ! {
+	converted_name := sanitize_path(name)
+
+	all_categories := get_all_categories(mut db)
+	for category in all_categories {
+		category_name := sanitize_path(category.name)
+		if category_name == converted_name {
+			return error('A category with the name ${name} already exists!')
+		}
+	}
+	all_articles := get_all_articles(mut db)
+	for article in all_articles {
+		article_name := sanitize_path(article.name)
+		if article_name == converted_name {
+			return error('An article with the name ${name} already exists!')
+		}
+	}
+}
+
+// get_publish_paths returns the file path for the html file and the according
+// url WITHOUT '/articles/'
+fn get_publish_paths(mut db pg.DB, template_dir string, article &Article) !(string, string) {
+	mut file_path := ''
+	mut article_path := ''
+	if article.category_id == 0 {
+		file_path = os.join_path(template_dir, 'articles', '${article.name}.html')
+		article_path = article.name
+	} else {
+		category := get_category_by_id(mut db, article.category_id) or {
+			return error('error: category does not exist!')
+		}
+		file_path = os.join_path(template_dir, 'articles', category.name, '${article.name}.html')
+		article_path = '${category.name}/${article.name}'
+	}
+	// always convert paths to lowercase and replace spaces by '-'
+	file_path = sanitize_path(file_path)
+	article_path = sanitize_path(article_path)
+	return file_path, article_path
+}
+
+// get all categories
+pub fn get_all_categories(mut db pg.DB) []Category {
+	mut categories := sql db {
+		select from Category order by name
+	} or { []Category{} }
+
+	return categories
+}
+
+pub fn get_category_by_id(mut db pg.DB, category_id int) !Category {
+	mut rows := sql db {
+		select from Category where id == category_id
+	} or { []Category{} }
+
+	if rows.len == 0 {
+		return error('Category does not exist')
+	} else {
+		return rows[0]
+	}
 }
 
 // get all articles
 pub fn get_all_articles(mut db pg.DB) []Article {
 	mut articles := sql db {
 		select from Article order by created_at desc
+	} or { []Article{} }
+
+	for mut article in articles {
+		if article.thumbnail != 0 {
+			img := get_image(mut db, article.thumbnail) or { Image{} }
+			article.image_src = img.src
+		}
+	}
+	return articles
+}
+
+// get all articles by category id
+pub fn get_all_articles_by_category(mut db pg.DB, category int) []Article {
+	mut articles := sql db {
+		select from Article where category_id == category order by created_at desc
 	} or { []Article{} }
 
 	for mut article in articles {
@@ -521,6 +754,26 @@ pub fn get_article(mut db pg.DB, article_id int) !Article {
 		articles[0].image_src = img.src
 	}
 	return articles[0]
+}
+
+// gewt an article by name
+pub fn get_article_by_name(mut db pg.DB, _article_name string) !Article {
+	// de-sanitize path
+	article_name := _article_name.replace('-', ' ')
+	mut articles := get_all_articles(mut db)
+
+	for article in articles {
+		if article.name.to_upper() == article_name.to_upper() {
+			if articles[0].thumbnail != 0 {
+				img := get_image(mut db, articles[0].thumbnail) or { Image{} }
+				articles[0].image_src = img.src
+			}
+
+			return article
+		}
+	}
+
+	return error('article was not found')
 }
 
 // get image by id
