@@ -6,6 +6,11 @@ power that V and Vweb is capable of. There might be breaking changes in the futu
 Vaunt is a cms with visual editor written in [V](https://vlang.io/) that you can 
 use to generate static sites.
 
+**License**
+
+About the license: any websites generated with Vaunt are license free since they don't 
+contain any code used in this repository.
+
 ![vaunt_2](https://user-images.githubusercontent.com/43839798/232623199-0df92ccc-2b12-489c-9a35-b730b9c6476d.png)
 
 ## Features
