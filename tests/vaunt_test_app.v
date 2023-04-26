@@ -74,9 +74,24 @@ pub fn (mut app App) home() vweb.Result {
 	return app.html(app.s_html)
 }
 
-['/articles/:article_id']
-pub fn (mut app App) article_page(article_id int) vweb.Result {
-	article_file := os.join_path(app.template_dir, 'articles', '${article_id}.html')
+['/articles/:category_name/:article_name']
+pub fn (mut app App) category_article_page(category_name string, article_name string) vweb.Result {
+	article_file := os.join_path(app.template_dir, 'articles', category_name, '${article_name}.html')
+
+	// read the generated article html file
+	content := os.read_file(article_file) or {
+		eprintln(err)
+		return app.not_found()
+	}
+
+	// save html in `app.s_html` first before returning it
+	app.s_html = content
+	return app.html(content)
+}
+
+['/articles/:article_name']
+pub fn (mut app App) article_page(article_name string) vweb.Result {
+	article_file := os.join_path(app.template_dir, 'articles', '${article_name}.html')
 
 	// read the generated article html file
 	content := os.read_file(article_file) or {

@@ -191,40 +191,20 @@ fn generate_articles[T](mut app T, dist_path string) ! {
 	os.mkdir(articles_path)!
 
 	mut articles := get_all_articles(mut app.db)
-	for mut article in articles {
+	for article in articles {
 		if article.show == false {
 			continue
 		}
-		// windows saving only as '\r' in the editor??
-		article.name = article.name.replace('\r', '')
-
 		a_start := time.ticks()
 
 		// generate the article html
 		file_art := generate(article.block_data)
 
-		mut category := Category{}
-
-		mut file_path := ''
-		mut article_path := ''
-		// add category name to the path if article has a category
-		if article.category_id == 0 {
-			file_path = os.join_path(app.template_dir, 'articles', '${article.name}.html')
-			article_path = '${article.name}.html'
-		} else {
-			category = get_category_by_id(mut app.db, article.category_id) or {
-				eprintln('warning: category of article "${article.name}" does not exist!')
-				continue
-			}
-			file_path = os.join_path(app.template_dir, 'articles', category.name, '${article.name}.html')
-			article_path = '${category.name}/${article.name}.html'
+		file_path, mut article_path := get_publish_paths(mut app.db, app.template_dir,
+			article) or {
+			eprintln('warning: category of article "${article.name}" does not exist!')
+			continue
 		}
-
-		// always convert paths to lowercase and replace spaces by '-'
-		file_path = file_path.to_lower()
-		file_path = file_path.replace(' ', '-')
-		article_path = article_path.to_lower()
-		article_path = article_path.replace(' ', '-')
 
 		// create all directories for the category
 		os.mkdir_all(os.dir(file_path)) or { return error('file "${file_path}" is not writeable') }
@@ -238,15 +218,17 @@ fn generate_articles[T](mut app T, dist_path string) ! {
 		f_art.close()
 
 		// get html
+		article_path += '.html'
 		article_file_path := os.join_path(articles_path, article_path)
 		os.mkdir_all(os.dir(article_file_path))!
 
 		// no category
-		article_name := article.name.to_lower().replace(' ', '-')
-		if category.id == 0 {
+		article_name := sanitize_path(article.name)
+		if article.category_id == 0 {
 			app.article_page(article_name)
 		} else {
-			category_name := category.name.to_lower().replace(' ', '-')
+			category := get_category_by_id(mut app.db, article.category_id)!
+			category_name := sanitize_path(category.name)
 			app.category_article_page(category_name, article_name)
 		}
 
@@ -254,7 +236,7 @@ fn generate_articles[T](mut app T, dist_path string) ! {
 			eprintln('warning: article "${article.name}" produced no html! Did you forget to set `app.s_html`?')
 		}
 
-		mut f := os.create(article_file_path) or { panic(err) }
+		mut f := os.create(article_file_path)!
 		f.write(app.s_html.bytes())!
 		f.close()
 
