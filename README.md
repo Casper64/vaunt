@@ -355,40 +355,8 @@ pub mut:
 
 ### Utility
 
-Vaunt offers a few utility functions you can use in your routes:
-
-Get all articles:
-
-**Example:**
-```v ignore
-articles := vaunt.get_all_articles(mut app.db)
-```
-**Definition:**
-```v ignore
-get_all_articles(mut db pg.DB) []Article
-```
-
-Get an article by id:
-
-**Example:**
-```v ignore
-current_article := vaunt.get_article(mut app.db, 1)!
-```
-**Definition:**
-```v ignore
-get_article(mut db pg.DB, article_id int) !Article
-```
-
-Get an image by id:
-
-**Example:**
-```v ignore
-image := vaunt.get_image(mut app.db, 1)!
-```
-**Definition:**
-```v ignore
-get_image(mut db pg.DB, image_id int) !Image
-```
+Vaunt offers a few utility functions you can use in your app:
+see [util.v](src/util.v)
 
 ## Extensibility
 The frontend editor is made with [Vue](https://vuejs.org/) and 
