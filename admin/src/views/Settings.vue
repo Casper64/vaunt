@@ -1,15 +1,21 @@
 <script setup lang="ts">
 import { userCategoryStore } from '@/stores/category';
+import { watch } from 'vue';
 import { ref } from 'vue'
 
 const categoryStore = userCategoryStore()
 
 const complete = ref(false)
+const errorMessages = ref(new Array(categoryStore.categories.length).fill('') as string[])
 
 const submitHandler = async function(data: any, category_id: number) {
+    let index = categoryStore.categories.findIndex(c => c.id == category_id)
+    errorMessages.value[index] = ''
     try {
         await categoryStore.update(category_id, data)
-    } catch(err) {}
+    } catch(err: any) {
+        errorMessages.value[index] = err.response.data
+    }
     finally {
         complete.value = true
     }
@@ -26,6 +32,10 @@ async function deleteCategory(id: number) {
     }
 }
 
+watch(() => categoryStore.categories, () => {
+    errorMessages.value = new Array(categoryStore.categories.length).fill('')
+})
+
 </script>
 
 <template>
@@ -34,7 +44,7 @@ async function deleteCategory(id: number) {
 
         <div class="categories">
             <h2>Manage Categories</h2>
-            <template v-for="category in categoryStore.categories">
+            <template v-for="category, index in categoryStore.categories">
                 <div class="update-category">
                     <h3>{{  category.name }}</h3>
                     <FormKit 
@@ -53,6 +63,7 @@ async function deleteCategory(id: number) {
                         />
                     </FormKit>
                     <FormKit outer-class="delete-btn" type="button" @click="() => deleteCategory(category.id)">Delete</FormKit>
+                    <p v-if="errorMessages[index]" class="error">{{ errorMessages[index] }}</p>
                 </div>
             </template>
             <router-link to="/admin/create-category" class="add-category-btn">
@@ -91,6 +102,7 @@ async function deleteCategory(id: number) {
     }
 
     .update-category {
+        align-self: flex-start;
         width: 250px;
     }
 }

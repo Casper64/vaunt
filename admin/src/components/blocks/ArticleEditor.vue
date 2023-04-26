@@ -12,6 +12,7 @@ const store = useArticleStore()
 const categoryStore = userCategoryStore()
 const route = useRoute()
 const complete = ref(false)
+const errorMessage = ref('')
 
 const article = computed(() => {
     return store.get(route.params['id'])!
@@ -21,6 +22,8 @@ const currentCategory = ref(article.value.category_id)
 const showStatus = ref(article.value.show ? 'Hide Article' : 'Show Article')
 
 async function submitHandler(data: CreateArticle) {
+    errorMessage.value = ''
+    
     try {
         let success = await store.update(article.value.id, data)
         let new_article = store.get(article.value.id)!
@@ -37,7 +40,9 @@ async function submitHandler(data: CreateArticle) {
             blockStore.blocks[0].data.text = data.name
             await blockStore.save(article.value.id)
         }
-    } catch (err) {}
+    } catch (err: any) {
+        errorMessage.value = err.response.data
+    }
     finally {
         complete.value = false
     }
@@ -107,6 +112,7 @@ const categoryOptions = computed(() => {
         <FormKit type="file" accept=".png, .jpg, .jpeg" file-item-icon="fileImage" no-files-icon="fileImage"
         label="New thumbnail" name="thumbnail" help="Add a thumnbnail image"/>
     </FormKit>
+    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
     <hr>
     <h1>Visibility</h1>
     <FormKit type="form" @submit="changeVisibility" :submit-label="showStatus"></FormKit> 

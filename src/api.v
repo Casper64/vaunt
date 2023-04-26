@@ -50,13 +50,14 @@ pub fn (mut app Api) create_category() vweb.Result {
 		name: capitalize_text_field(app.form['name'])
 	}
 
+	check_category_article_name_collision(mut app.db, new_category.name) or {
+		app.set_status(400, '')
+		return app.text(err.msg())
+	}
+
 	sql app.db {
 		insert new_category into Category
 	} or {
-		if err.msg().contains('unique') {
-			app.set_status(400, '')
-			return app.text('error: category with name "${new_category.name}" already exists!')
-		}
 		app.set_status(500, '')
 		return app.text('error: could not make new category, please try again later.')
 	}
@@ -109,6 +110,11 @@ pub fn (mut app Api) update_category(category_id int) vweb.Result {
 	}
 
 	new_name := capitalize_text_field(app.form['name'])
+	check_category_article_name_collision(mut app.db, new_name) or {
+		app.set_status(400, '')
+		return app.text(err.msg())
+	}
+
 	sql app.db {
 		update Category set name = new_name where id == category_id
 	} or {
@@ -152,13 +158,14 @@ pub fn (mut app Api) create_article() vweb.Result {
 		block_data: app.form['block_data']
 	}
 
+	check_category_article_name_collision(mut app.db, new_article.name) or {
+		app.set_status(400, '')
+		return app.text(err.msg())
+	}
+
 	sql app.db {
 		insert new_article into Article
 	} or {
-		if err.msg().contains('unique') {
-			app.set_status(400, '')
-			return app.text('error: article with name "${new_article.name}" already exists!')
-		}
 		app.set_status(500, '')
 		return app.text('error: inserting article into database has failed')
 	}
@@ -297,6 +304,11 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 	}
 
 	article_name := sanitize_text_field(app.form['name'])
+	check_category_article_name_collision(mut app.db, article_name) or {
+		app.set_status(400, '')
+		return app.text(err.msg())
+	}
+
 	article_descr := sanitize_text_field(app.form['description'])
 	sql app.db {
 		update Article set name = article_name, description = article_descr where id == article_id
@@ -631,7 +643,29 @@ fn capitalize_text_field(value string) string {
 // sanitize_path converts `path` to lowercase and replaces spaces with '-'
 fn sanitize_path(path string) string {
 	mut new_path := path.to_lower()
-	return new_path.replace(' ', '-')
+	new_path = new_path.replace(' ', '-')
+	return sanitize_text_field(new_path)
+}
+
+// check_category_article_name_collision returns an error if `name` collides
+// with an article or category name
+fn check_category_article_name_collision(mut db pg.DB, name string) ! {
+	converted_name := sanitize_path(name)
+
+	all_categories := get_all_categories(mut db)
+	for category in all_categories {
+		category_name := sanitize_path(category.name)
+		if category_name == converted_name {
+			return error('A category with the name ${name} already exists!')
+		}
+	}
+	all_articles := get_all_articles(mut db)
+	for article in all_articles {
+		article_name := sanitize_path(article.name)
+		if article_name == converted_name {
+			return error('An article with the name ${name} already exists!')
+		}
+	}
 }
 
 // get_publish_paths returns the file path for the html file and the according
