@@ -10,14 +10,14 @@ pub mut:
 }
 
 // get the correct url in your templates with a category
-// usage: `@{app.category_article_url(category.name, article.name)`
+// usage: `@{app.category_article_url(category.name, article.name)}`
 pub fn (u &Util) category_article_url(category_name string, article_name string) string {
 	mut url := '/articles/${category_name}/${article_name}'
 	return sanitize_path(url)
 }
 
 // get the correct url in your templates
-// // usage: `@{app.article_url(article.name)`
+// // usage: `@{app.article_url(article.name)}`
 pub fn (u &Util) article_url(article_name string) string {
 	mut url := '/articles/${article_name}'
 	return sanitize_path(url)
