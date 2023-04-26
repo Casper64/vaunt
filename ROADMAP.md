@@ -4,7 +4,7 @@
 - [X] Add tests for API
 - [ ] Add tests for page generation
 - [X] Allow user-defined methods to generate html pages
-- [ ] Categories
+- [X] Categories
 - [ ] Expose more functions from the api
 - [ ] Add more utility functions for app templates, like url reversing.
 - [ ] Allow custom blocks
