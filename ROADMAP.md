@@ -5,8 +5,17 @@
 - [ ] Add tests for page generation
 - [X] Allow user-defined methods to generate html pages
 - [X] Categories
-- [ ] Expose more functions from the api
-- [ ] Add more utility functions for app templates, like url reversing.
-- [ ] Allow custom blocks
+- [X] Expose more functions from the api
+- [X] Add more utility functions for app templates, like url reversing.
 - [X] Allow theme settings in admin panel
 - [ ] Add SEO e.g. `robots.txt`, `sitemap.xml`
+
+## 0.3
+- [ ] Add layout blocks
+- [ ] Import markdown feature
+- [ ] Documentation theme
+- [ ] Vaunt docs website
+- [ ] Documentation website generator like `v doc`. Content will be editable in the frontend editor. 
+
+## Future 
+- [ ] Allow custom blocks
