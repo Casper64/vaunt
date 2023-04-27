@@ -23,6 +23,9 @@ pub fn (u &Util) article_url(article_name string) string {
 	return sanitize_path(url)
 }
 
+// 		Helper functions
+// =============================
+
 // get all categories
 pub fn get_all_categories(mut db pg.DB) []Category {
 	mut categories := sql db {

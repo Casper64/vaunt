@@ -110,9 +110,17 @@ pub fn (mut app Api) update_category(category_id int) vweb.Result {
 	}
 
 	new_name := capitalize_text_field(app.form['name'])
-	check_category_article_name_collision(mut app.db, new_name) or {
+
+	current_category := get_category_by_id(mut app.db, category_id) or {
 		app.set_status(400, '')
-		return app.text(err.msg())
+		return app.text('error: category does not exist')
+	}
+
+	if current_category.name != new_name {
+		check_category_article_name_collision(mut app.db, new_name) or {
+			app.set_status(400, '')
+			return app.text(err.msg())
+		}
 	}
 
 	sql app.db {
@@ -277,7 +285,7 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 	}
 
 	// check if article exists
-	get_article(mut app.db, article_id) or {
+	current_article := get_article(mut app.db, article_id) or {
 		app.set_status(400, '')
 		return app.text('error: article with id "${article_id}" does not exist')
 	}
@@ -304,9 +312,12 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 	}
 
 	article_name := sanitize_text_field(app.form['name'])
-	check_category_article_name_collision(mut app.db, article_name) or {
-		app.set_status(400, '')
-		return app.text(err.msg())
+
+	if current_article.name != article_name {
+		check_category_article_name_collision(mut app.db, article_name) or {
+			app.set_status(400, '')
+			return app.text(err.msg())
+		}
 	}
 
 	article_descr := sanitize_text_field(app.form['description'])

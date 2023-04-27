@@ -110,6 +110,12 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 
 	println('[Vaunt] Generating custom pages...')
 
+	// get initial SEO
+	mut initial_seo := SEO{}
+	$if app is SEOInterface {
+		initial_seo = app.seo
+	}
+
 	app.before_request()
 
 	mut routes := []string{}
@@ -164,6 +170,9 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 
 				// reset app
 				app.s_html = ''
+				$if app is SEOInterface {
+					app.seo = initial_seo
+				}
 
 				i_end := time.ticks()
 				println('[Vaunt] Generated page "${output_file}" in ${i_end - i_start}ms')
@@ -189,6 +198,12 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 fn generate_articles[T](mut app T, dist_path string) ! {
 	articles_path := os.join_path(dist_path, 'articles')
 	os.mkdir(articles_path)!
+
+	// get initial SEO
+	mut initial_seo := SEO{}
+	$if app is SEOInterface {
+		initial_seo = app.seo
+	}
 
 	mut articles := get_all_articles(mut app.db)
 	for article in articles {
@@ -242,6 +257,9 @@ fn generate_articles[T](mut app T, dist_path string) ! {
 
 		// reset app
 		app.s_html = ''
+		$if app is SEOInterface {
+			app.seo = initial_seo
+		}
 
 		a_end := time.ticks()
 		println('[Vaunt] Generated article "${article.name}" in ${a_end - a_start}ms')
