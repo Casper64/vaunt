@@ -315,15 +315,32 @@ v run [project] --generate
 
 ## Search Engine Optimization (SEO)
 
+SEO is used to place your website higher in the rankings of search engines like google.
+One method to improve SEO is to provide metadata about the pages contents in the form 
+of html `meta` tags. This method is used by Vaunt.
+
+A common protocol is [OpenGraph](https://ogp.me/). You might have noticed that if you share 
+a link via WhatsApp or any other messaging app you sometimes see this card markup with the
+name of the page from the link with a small description and often an image. This card is 
+generated with the [OpenGraph](https://ogp.me/) protocol. And it never hurts to enable it!
+
 The integrated SEO settings can be enabled by adding `vaunt.SEO` to your `App` struct.
 ```v ignore
-
 struct App {
 // ...
 pub mut:
     seo vaunt.SEO [vweb_global] // SEO configuration
 // ...
 }
+```
+
+And adding it to your html templates along with the [OpenGraph](https://ogp.me/) prefix.
+```html
+<html prefix="@app.seo.og.prefix">
+<head>
+    @{app.seo.html()}
+</head>
+</html>
 ```
 
 ### Articles
@@ -381,8 +398,6 @@ Will result into
 <meta property="og:image:alt" content="Image Description">
 ```
 
-For all the options see [seo.v](src/seo.v).
-
 ### Routes
 In other routes you can modify `app.seo` to your preferences. Let's add a title and 
 description and set the page url for the about page.
@@ -439,10 +454,18 @@ mut app := &App{
 }
 ```
 
+For all available options see [seo.v](src/seo.v).
+
 ### Sitemap
 The `sitemap.xml` file is automatically generated if you provide `SEO.website_url`.
 
 ## Api
+
+### Utility
+
+Vaunt offers a few utility functions that you can use in your app:
+see [util.v](src/util.v)
+
 
 ### Database Models
 
@@ -496,10 +519,96 @@ pub mut:
 }
 ```
 
-### Utility
+### SEO
 
-Vaunt offers a few utility functions that you can use in your app:
-see [util.v](src/util.v)
+```
+pub struct SEO {
+pub mut:
+	// twitter card configuration
+	twitter Twitter
+	// Open Graph configuration
+	og OpenGraph
+	// your websites url
+	website_url string
+	// your pages description. Is automatically set by `set_article`
+	description string
+	// If you need any other meta tags. The map key is the property attribute
+	// and the map value is the content attribute.
+	other_properties map[string]string
+}
+```
+
+#### Twitter
+
+Implementation from
+[twitter card docs](https://developer.twitter.com/en/docs/twitter-for-websites/cards/guides/getting-started).
+
+```v oksyntax
+// TwitterCardType implement the meta `twitter:card` types 
+pub enum TwitterCardType {
+	summary
+	summary_large_image
+	app
+}
+
+pub struct Twitter {
+pub mut:
+	card_type TwitterCardType [name: 'card'] = .summary
+	// @username for the website used in the card footer.
+	site string
+	// @username for the content creator / author.
+	creator string
+	// all other properties of twitter. The map key is the property attribute
+	// and the map value is the content attribute.
+	// All properties are prefixed with 'twitter:'
+	other_properties map[string]string
+}
+```
+
+#### OpenGraph
+OpenGraph meta tags, implementation from [the OpenGraph website](https://ogp.me/).
+
+```v oksyntax
+
+pub struct OpenGraph {
+pub:
+	// add this as `prefix="@app.seo.og.prefix"` attribute to the `html` tag in your page
+	prefix string [skip] = 'og: https://ogp.me/ns#'
+pub mut:
+	title            string
+	og_type          string           [name: 'type']
+	image_url        string           [name: 'image']
+	url              string
+	description      string
+	audio            string
+	determiner       string
+	locale           string
+	locale_alternate []string         [name: 'locale:alternate']
+	site_name        string
+	video            string
+	article          OpenGraphArticle
+	// all other properties of opengraph. The map key is the property attribute
+	// and the map value is the content attribute.
+	// All properties are prefixed with 'og:'
+	other_properties map[string]string
+}
+```
+
+OpenGraph `article:`
+
+```v oksyntax
+// OpenGraph article attributes; are filled in automatically for each article
+// time fields must follow ISO_8601
+pub struct OpenGraphArticle {
+pub mut:
+	published_time  string
+	modified_time   string
+	expiration_time string
+	author          []string
+	section         string
+	tag             []string
+}
+```
 
 ## Extensibility
 The frontend editor is made with [Vue](https://vuejs.org/) and 

@@ -36,7 +36,9 @@ pub mut:
 // handle static image uploads
 ['/img/:img_path'; get]
 pub fn (mut app Upload) get_image(img_path string) vweb.Result {
-	file_path := os.join_path(app.upload_dir, 'img', img_path)
+	mut file_path := os.join_path(app.upload_dir, 'img', img_path)
+	// resolve '../' and '\'
+	file_path = os.norm_path(file_path)
 
 	// prevent directory traversal
 	if file_path.starts_with(app.upload_dir) == false {
