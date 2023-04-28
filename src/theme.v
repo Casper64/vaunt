@@ -107,7 +107,8 @@ pub fn update_theme[T](db &pg.DB, mut theme T) string {
 			}
 		}
 	}
-	return get_css_from_colors(all_colors)
+	css := get_css_from_colors(all_colors)
+	return '<style>${css}</style>'
 }
 
 fn get_css_from_colors(colors map[string]string) string {

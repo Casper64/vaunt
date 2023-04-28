@@ -1,12 +1,10 @@
 module vaunt
 
-import vweb.assets
 import db.pg
 
 pub struct Util {
 pub mut:
-	styles        []string
-	asset_manager &assets.AssetManager = assets.new_manager()
+	theme_css string
 }
 
 // get the correct url in your templates with a category

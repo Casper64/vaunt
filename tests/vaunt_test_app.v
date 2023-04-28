@@ -21,11 +21,10 @@ pub:
 	template_dir string                 [vweb_global]
 	upload_dir   string                 [vweb_global]
 pub mut:
-	db     pg.DB  [vweb_global]
 	dev    bool   [vweb_global] // used by Vaunt internally
-	theme  Theme  [vweb_global]
-	s_html string
-	// used by Vaunt to generate html
+	theme  Theme
+	db     pg.DB
+	s_html string // used by Vaunt to generate html
 }
 
 fn exit_after_timeout(timeout_in_ms int) {

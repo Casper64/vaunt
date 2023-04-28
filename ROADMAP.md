@@ -8,7 +8,7 @@
 - [X] Expose more functions from the api
 - [X] Add more utility functions for app templates, like url reversing.
 - [X] Allow theme settings in admin panel
-- [ ] Add SEO e.g. `robots.txt`, `sitemap.xml`
+- [X] Add SEO e.g. OG meta tags, `sitemap.xml`
 
 ## 0.3
 - [ ] Add layout blocks

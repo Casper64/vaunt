@@ -112,9 +112,10 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 
 	// get initial SEO
 	mut initial_seo := SEO{}
-	$if app is SEOInterface {
+	$if T is SEOInterface {
 		initial_seo = app.seo
 	}
+	mut urls := []string{}
 
 	app.before_request()
 
@@ -153,6 +154,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 				}
 
 				output_file := '${route}.html'
+				urls << output_file
 
 				file_path := os.join_path(dist_path, output_file)
 				// make dirs for nested routes
@@ -170,7 +172,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 
 				// reset app
 				app.s_html = ''
-				$if app is SEOInterface {
+				$if T is SEOInterface {
 					app.seo = initial_seo
 				}
 
@@ -187,7 +189,36 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 		eprintln('[Vaunt] Error: expecting method "category_article_page (string, string) vweb.Result" on "${T.name}"${std_msg}')
 	} else {
 		println('[Vaunt] Generating article pages...')
-		generate_articles(mut app, dist_path) or { panic(err) }
+		urls << generate_articles(mut app, dist_path) or { panic(err) }
+	}
+
+	// sitemap.xml
+	$if T is SEOInterface {
+		println('[Vaunt] Generating sitemap.xml...')
+
+		if app.seo.website_url == '' {
+			println('warning: `SEO.website_url` is not set! Skipping sitemap.xml')
+		} else {
+			mut sitemap_urls := [app.seo.website_url]
+			for url in urls {
+				if url == 'index.html' {
+					continue
+				}
+
+				mut website_url := app.seo.website_url
+				if app.seo.website_url.ends_with('/') == false {
+					// make sure the full url has a '/' after the website name
+					website_url += '/'
+				}
+
+				sitemap_urls << website_url + url
+			}
+			sitemap := generate_sitemap(sitemap_urls)
+
+			mut f := os.create(os.join_path(dist_path, 'sitemap.xml'))!
+			f.write_string(sitemap)!
+			f.close()
+		}
 	}
 
 	end := time.ticks()
@@ -195,13 +226,16 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 	println('[Vaunt] Done! Outputted your website to "${output_dir} in ${end - start}ms')
 }
 
-fn generate_articles[T](mut app T, dist_path string) ! {
+fn generate_articles[T](mut app T, dist_path string) ![]string {
 	articles_path := os.join_path(dist_path, 'articles')
 	os.mkdir(articles_path)!
 
+	// all urls for the articles
+	mut urls := []string{}
+
 	// get initial SEO
 	mut initial_seo := SEO{}
-	$if app is SEOInterface {
+	$if T is SEOInterface {
 		initial_seo = app.seo
 	}
 
@@ -234,6 +268,8 @@ fn generate_articles[T](mut app T, dist_path string) ! {
 
 		// get html
 		article_path += '.html'
+		urls << 'articles/${article_path}'
+
 		article_file_path := os.join_path(articles_path, article_path)
 		os.mkdir_all(os.dir(article_file_path))!
 
@@ -257,11 +293,13 @@ fn generate_articles[T](mut app T, dist_path string) ! {
 
 		// reset app
 		app.s_html = ''
-		$if app is SEOInterface {
+		$if T is SEOInterface {
 			app.seo = initial_seo
 		}
 
 		a_end := time.ticks()
 		println('[Vaunt] Generated article "${article.name}" in ${a_end - a_start}ms')
 	}
+
+	return urls
 }

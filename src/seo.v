@@ -21,6 +21,10 @@ pub mut:
 	site string
 	// @username for the content creator / author.
 	creator string
+	// all other properties of twitter. The map key is the property attribute
+	// and the map value is the content attribute.
+	// All properties are prefixed with 'twitter:'
+	other_properties map[string]string
 }
 
 // OpenGraph article attributes; are filled in automatically for each article
@@ -43,7 +47,7 @@ pub:
 	prefix string [skip] = 'og: https://ogp.me/ns#'
 pub mut:
 	title            string
-	og_type          string
+	og_type          string           [name: 'type']
 	image_url        string           [name: 'image']
 	url              string
 	description      string
@@ -70,17 +74,20 @@ pub mut:
 	website_url string
 	// your pages description. Is automatically set by `set_article`
 	description string
+	// If you need any other meta tags. The map key is the property attribute
+	// and the map value is the content attribute.
+	other_properties map[string]string
 }
 
 interface SEOInterface {
-	seo SEO
+	seo voidptr
 }
 
 // set_article updates the seo meta tags with the data from `article` at url `url`
 pub fn (mut seo SEO) set_article(article &Article, url string) {
 	seo.og.title = article.name
-	seo.og.description = article.description
-	seo.description = article.description
+	seo.og.og_type = 'article'
+	seo.set_description(article.description)
 
 	if article.thumbnail != 0 {
 		if seo.website_url.ends_with('/') {
@@ -109,13 +116,24 @@ pub fn (mut seo SEO) set_url(url string) {
 	}
 }
 
+pub fn (mut seo SEO) set_description(description string) {
+	seo.description = description
+	seo.og.description = description
+}
+
 // html returns the meta tags for the SEO configuration
 pub fn (mut seo SEO) html() string {
 	mut meta_tags := []string{}
 
+	meta_tags << '<meta name="description" content="${seo.description}">'
+
 	meta_tags << seo.get_meta_from(seo.og, create_og_meta)
 	meta_tags << seo.get_meta_from(seo.og.article, create_og_article_meta)
 	meta_tags << seo.get_meta_from(seo.twitter, create_twitter_meta)
+
+	for key, val in seo.other_properties {
+		meta_tags << create_meta(key, val)
+	}
 
 	return meta_tags.join_lines()
 }
@@ -148,6 +166,10 @@ fn (seo &SEO) get_meta_from[T](prop T, to_meta fn (string, string) string) []str
 				}
 			} $else $if field.typ is $enum {
 				meta_tags << to_meta(name, prop.$(field.name).str())
+			} $else $if field.typ is map[string]string {
+				for key, val in prop.$(field.name) {
+					meta_tags << to_meta(key, val)
+				}
 			}
 		}
 	}
@@ -155,6 +177,7 @@ fn (seo &SEO) get_meta_from[T](prop T, to_meta fn (string, string) string) []str
 }
 
 // meta tag generators
+
 [inline]
 fn create_og_meta(property string, content string) string {
 	return '<meta property="og:${property}" content="${content}" />'
@@ -171,6 +194,13 @@ fn create_twitter_meta(property string, content string) string {
 }
 
 [inline]
-fn create_meta(name string, content string) string {
-	return '<meta name="${name}" content="${content}" />'
+fn create_meta(property string, content string) string {
+	return '<meta property="${property}" content="${content}" />'
+}
+
+// generate_sitemap generates a `sitemap.xml` file for the `app`
+fn generate_sitemap(urls []string) string {
+	mut xml := $tmpl('./templates/sitemap.xml')
+	// beautify
+	return xml.replace('\n\n', '\n')
 }

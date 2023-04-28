@@ -18,6 +18,7 @@ contain any code used in this repository.
 - Image uploads
 - Fully static site generation
 - User configurable themes
+- easy to configure SEO (Search Engine Optimization)
 
 ## Requirements
 Make sure you have V installed. You can check out the 
@@ -193,10 +194,8 @@ comprehensive implementation.
 // fetch the new latest theme before processing a request
 pub fn (mut app App) before_request() {
 	// only update when request is a route, assuming all resources contain a "."
-	if app.req.url.contains('..') == false {
-		colors_css := vaunt.update_theme(app.db, mut app.theme)
-		// store the generated css
-		app.styles << colors_css
+	if app.req.url.contains('.') == false {
+		app.theme_css = vaunt.update_theme(app.db, mut app.theme)
 	}
 }
 ```
@@ -212,19 +211,13 @@ Will produce:
 <nav class="nav-center"></nav>
 ```
 
-The colors are generated as css variable. The return value of `vaunt.update_theme` 
-(`app.styles` is an array). will be
-```css
-:root {
-    --color-background: #ffffff;
-}
-```
-You can put this css directly into your html
+The generated css is stored in `app.theme_css` and is a style tag which contains the css.
+You can directly include `app.theme_css` in your templates.
+
+**Example:**
 ```html
 <head>
-    @for style in app.styles
-    <style>@{style}</style>
-    @end
+    @{app.theme_css}
 </head>
 ```
 
@@ -298,6 +291,14 @@ A method with attribute `['/about']` will produce the html file `about.html`.
 As expected a method with attribute `['/nested/about']` will put html file at
 `nested/about.html`.
 
+```v ignore
+// will generate in `about.html`
+pub fn (mut app App) about() vweb.Result {
+	app.s_html = 'About Vaunt'
+	return app.html(app.s_html)
+}
+```
+
 #### Index routes
 Index routes (or routes ending with a "/") will have `index.html` as ending. 
 So the route `/nested/` will put the html file at `nested/index.html`.
@@ -312,16 +313,153 @@ All files needed to host your website will be in the generated `public` director
 v run [project] --generate
 ```
 
+## Search Engine Optimization (SEO)
+
+The integrated SEO settings can be enabled by adding `vaunt.SEO` to your `App` struct.
+```v ignore
+
+struct App {
+// ...
+pub mut:
+    seo vaunt.SEO [vweb_global] // SEO configuration
+// ...
+}
+```
+
+### Articles
+
+The meta tags for articles can be automatically generated if you use `SEO.set_article`.
+Let's modify the `article_page` to enable SEO support (You can do the same for
+`category_article_page`).
+
+```v ignore
+['/articles/:article_name']
+pub fn (mut app App) article_page(article_name string) vweb.Result {
+	// get the article by name
+	article := vaunt.get_article_by_name(mut app.db, article_name) or { return app.not_found() }
+	// set seo
+	app.seo.set_article(article, app.req.url)
+
+	article_file := os.join_path(app.template_dir, 'articles', '${article_name}.html')
+
+	// read the generated article html file
+	content := os.read_file(article_file) or {
+		eprintln(err)
+		return app.not_found()
+	}
+
+	// save html in `app.s_html` first before returning it
+	app.s_html = content
+	return app.html(content)
+}
+```
+
+This will set the following meta tags:
+- `meta` with `name="description"`
+- `og:title`
+- `og:description`
+- `og:image`
+- `og:url`
+- `og:type = 'article'`
+- `article:published_time`
+- `article:modified_time`
+
+> **Note**
+> about twitter: the Twitter API's default behaviour is to fallback on
+> OpenGraph tags, so there's no need to set double meta tags like 'twitter:description'
+
+The most common properties of OpenGraph and Twitter are present in `SEO.og` and `SEO.twitter`
+respectively. If you need any other properties you can add them to `other_properties`.
+
+**Example:**
+```v ignore
+app.seo.og.other_properties['image:alt'] = 'Image Description'
+```
+
+Will result into
+```html
+<meta property="og:image:alt" content="Image Description">
+```
+
+For all the options see [seo.v](src/seo.v).
+
+### Routes
+In other routes you can modify `app.seo` to your preferences. Let's add a title and 
+description and set the page url for the about page.
+
+```v ignore
+// will generate in `about.html`
+pub fn (mut app App) about() vweb.Result {
+	app.seo.og.title = 'About Vaunt'
+	app.seo.set_description('Vaunt is a cms written in V with a frontend editor in Vue. It was created by Casper Kuethe in 2023')
+	app.seo.set_url(app.req.url)
+	
+	app.s_html = 'About Vaunt'
+	return app.html(app.s_html)
+}
+```
+
+> **Note**
+> `SEO.set_url` will prefix `SEO.website_url` to the passed path.
+
+This will set the following meta tags:
+- `meta` with `name="description"`
+- `og:title`
+- `og:description`
+- `og:url`
+
+### Providing default options
+Sometimes you want to define SEO properties for the whole website like the website url.
+You can set those properties when you create the app. 
+
+**Example**
+```v ignore
+mut app := &App{
+	// ...
+	seo: vaunt.SEO{
+		// Provide the website's url
+		website_url: 'https://example.com'
+		twitter: vaunt.Twitter{
+			// twitter:card
+			card_type: .summary
+			// twitter:site
+			site: '@casper_kuethe'
+			// twitter:creator
+			creator: '@casper_kuethe'
+		}
+		og: vaunt.OpenGraph{
+			// og:site_name
+			site_name: 'Vaunt'
+			article: vaunt.OpenGraphArticle{
+				// article:author
+				author: ['Casper Kuethe']
+			}
+		}
+	}
+}
+```
+
+### Sitemap
+The `sitemap.xml` file is automatically generated if you provide `SEO.website_url`.
+
 ## Api
 
 ### Database Models
 
 ```v oksyntax
+[table: 'categories']
+pub struct Category {
+pub mut:
+	id   int    [primary; sql: serial]
+	name string [unique]
+}
+
 [table: 'articles']
 pub struct Article {
 pub mut:
 	id          int    [primary; sql: serial]
 	name        string [unique]
+	category_id int
 	description string
 	show        bool
 	thumbnail   int
@@ -360,7 +498,7 @@ pub mut:
 
 ### Utility
 
-Vaunt offers a few utility functions you can use in your app:
+Vaunt offers a few utility functions that you can use in your app:
 see [util.v](src/util.v)
 
 ## Extensibility
