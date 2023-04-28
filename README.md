@@ -454,7 +454,7 @@ mut app := &App{
 }
 ```
 
-For all available options see [seo.v](src/seo.v).
+For all available options see [the SEO api](#seo). 
 
 ### Sitemap
 The `sitemap.xml` file is automatically generated if you provide `SEO.website_url`.
@@ -521,7 +521,7 @@ pub mut:
 
 ### SEO
 
-```
+```v oksyntax
 pub struct SEO {
 pub mut:
 	// twitter card configuration
