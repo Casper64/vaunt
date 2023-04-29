@@ -2,7 +2,7 @@
 
 ## 0.2
 - [X] Add tests for API
-- [ ] Add tests for page generation
+- [X] Add tests for page generation
 - [X] Allow user-defined methods to generate html pages
 - [X] Categories
 - [X] Expose more functions from the api

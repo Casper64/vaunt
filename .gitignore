@@ -25,3 +25,5 @@ bin/
 
 # test app
 tests/uploads
+tests/public
+tests/templates/articles

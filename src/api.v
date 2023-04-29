@@ -166,6 +166,10 @@ pub fn (mut app Api) create_article() vweb.Result {
 		block_data: app.form['block_data']
 	}
 
+	if is_empty('show', app.form) == false {
+		new_article.show = app.form['show'] == 'true'
+	}
+
 	check_category_article_name_collision(mut app.db, new_article.name) or {
 		app.set_status(400, '')
 		return app.text(err.msg())

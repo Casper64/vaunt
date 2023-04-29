@@ -28,6 +28,7 @@ fn testsuite_begin() {
 
 fn test_setup_database() {
 	mut db := get_connection() or { panic(err) }
+	db.drop('categories') or {}
 	db.drop('articles') or {}
 	db.drop('images') or {}
 }
