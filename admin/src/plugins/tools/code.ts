@@ -49,7 +49,7 @@ export default class CodeBlock {
             this.data.code = defaultCode
         }
         if (this.data.language == undefined) {
-            this.data.language = 'V'
+            this.data.language = 'BASH'
         }
     }
 
@@ -82,16 +82,9 @@ export default class CodeBlock {
     }
 
     save() {
-        window.blur()
-        let innerHtml = this._wrapper.innerHTML
-        innerHtml = innerHtml.replace('contenteditable="true"', '')
-        innerHtml = innerHtml.replace('cm-activeLine', '')
-        innerHtml = innerHtml.replace('cm-focused', '')
-
         return {
             language: this.data.language,
             code: this.codemirrorView.state.doc.sliceString(0),
-            html: innerHtml
         } as CodeBlockData
     }
 
@@ -100,6 +93,13 @@ export default class CodeBlock {
 
         let languagesSelect = document.createElement("select");
         languagesSelect.classList.add("small");
+
+        // insert text mode
+        var option = document.createElement("option");
+        option.value = 'BASH'
+        option.text = 'BASH'
+        option.selected = true
+        languagesSelect.appendChild(option);
 
         //Create and append the options
         let didSetV = false
@@ -110,9 +110,9 @@ export default class CodeBlock {
                 option.value = 'V'
                 option.text = 'V'
 
-                if('V' == this.data.language){
-                    option.selected = true
-                }
+                // if('V' == this.data.language){
+                //     option.selected = true
+                // }
                 languagesSelect.appendChild(option);
                 didSetV = true
             }

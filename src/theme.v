@@ -3,6 +3,7 @@ module vaunt
 import db.pg
 import json
 import vweb
+import strconv
 
 // Public theme data types:
 pub type Color = string
@@ -116,10 +117,21 @@ fn get_css_from_colors(colors map[string]string) string {
 
 	for name, val in colors {
 		css += '\t--color-${name}: ${val};\n'
+		css += '\t--color-${name}-rgb: ${to_seperate_rgb(val)};\n'
 	}
 
 	css += '}\n'
 	return css
+}
+
+fn to_seperate_rgb(hex_color string) string {
+	mut rgb := ''
+	for i := 1; i < 7; i += 2 {
+		number := strconv.parse_int(hex_color[i..i + 2], 16, 0) or { 0 }
+		rgb += '${number}, '
+	}
+
+	return rgb#[..-2]
 }
 
 // Theme Api routes:

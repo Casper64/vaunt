@@ -56,3 +56,12 @@ onBeforeUnmount(() => {
         </template>
     </div>
 </template>
+
+<style lang="scss" scoped>
+
+.block-container {
+    height: calc(100vh - 80px - 64px);
+    overflow-y: auto;
+}
+
+</style>

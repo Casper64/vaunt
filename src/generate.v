@@ -156,14 +156,15 @@ pub fn generate_table(block &Block) string {
 }
 
 pub struct CodeData {
-	code string
 pub:
+	code     string
 	language string
-	html     string
 }
 
 pub fn generate_code(block &Block) string {
 	mut data := json.decode(CodeData, block.data) or { CodeData{} }
+
+	lang_class := 'language-${data.language.to_lower()}'
 
 	return $tmpl('./templates/blocks/code.html')
 }

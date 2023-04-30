@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@editorjs/image": "^2.8.1",
+    "@editorjs/inline-code": "^1.4.0",
     "@editorjs/link": "^2.5.0",
     "@editorjs/quote": "^2.5.0",
     "@editorjs/simple-image": "^1.5.1",
