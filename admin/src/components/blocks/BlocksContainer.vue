@@ -3,15 +3,10 @@ import { useBlockStore } from '@/stores/blocks';
 import Block from '@/components/blocks/Block.vue'
 import { onMounted, ref } from 'vue';
 import { onBeforeUnmount } from 'vue';
-import { computed } from 'vue';
 
 const store = useBlockStore()
 
 const active = ref(0)
-
-const currentBlocks = computed(() => {
-    return store.blocks.slice(1)
-})
 
 function checkActive() {
     const activeElement = document.querySelector('.ce-block--focused')!
@@ -51,7 +46,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="block-container">
-        <template v-for="block, index in currentBlocks">
+        <template v-for="block, index in store.blocks">
             <Block :block="block" :active="active == index" @click="setActive(index)" />
         </template>
     </div>

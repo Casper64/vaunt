@@ -25,7 +25,7 @@ const editorChange: EditorConfig['onChange'] = async (api, event) => {
         const output = await editor.value?.save()
         if (output) {
             // first block is the title, so we don't want to edit it
-            output.blocks.splice(0, 0, store.blocks[0])
+            // output.blocks.splice(0, 0, store.blocks[0])
             
             store.blocks = output.blocks;
             await store.save(route.params['id'])
@@ -36,7 +36,7 @@ const editorChange: EditorConfig['onChange'] = async (api, event) => {
 // TODO: add save callback with $mitt or something
 onMounted(() => {
     const server = import.meta.env.VITE_API_BASE_URL
-    editor.value = createEditor('editor', store.blocks.slice(1), {
+    editor.value = createEditor('editor', store.blocks, {
         linkEndpoint: server+'fetch-link',
         uploadFile: server+'upload-image',
         uploadUrl: server+'upload-image-url'
@@ -50,7 +50,7 @@ onMounted(() => {
 <template>
 <div class="document">
     <div id="editor">
-        <h1>{{ store.blocks[0]?.data.text }}</h1>
+        <!-- <h1>{{ store.blocks[0]?.data.text }}</h1> -->
     </div>
 </div>
 </template>

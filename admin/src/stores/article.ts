@@ -35,9 +35,7 @@ export const useArticleStore = defineStore('article', {
 
 
             // create standard title block with the text equal to the article name
-            const blocks = `[{"id":"e_sTVYXqiN","type":"heading","data":{"text":"${
-                data.name
-            }","level":1}}]`
+            const blocks = `[]`
 
             body.append('block_data', blocks)
 
@@ -86,7 +84,7 @@ export const useArticleStore = defineStore('article', {
                 currentArticle.description = data.description
                 currentArticle.category_id = data.category_id || 0
                 if (name) {
-                    currentArticle.image_src = `uploads/img/${name}`
+                    currentArticle.image_src = `/uploads/img/${name}`
                 }
                 return true
             }

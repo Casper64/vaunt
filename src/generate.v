@@ -44,6 +44,9 @@ pub fn generate(data string) string {
 			'code' {
 				generate_code(block)
 			}
+			'list' {
+				generate_list(block)
+			}
 			else {
 				''
 			}
@@ -157,14 +160,54 @@ pub fn generate_table(block &Block) string {
 
 pub struct CodeData {
 pub:
-	code     string
 	language string
+pub mut:
+	code string
 }
 
 pub fn generate_code(block &Block) string {
 	mut data := json.decode(CodeData, block.data) or { CodeData{} }
 
+	// escape html tags
+	data.code = data.code.replace('<', '&lt;')
+	data.code = data.code.replace('>', '&gt;')
+
 	lang_class := 'language-${data.language.to_lower()}'
 
 	return $tmpl('./templates/blocks/code.html')
+}
+
+pub struct ListData {
+pub mut:
+	style string
+	items []ListItem
+}
+
+pub struct ListItem {
+pub mut:
+	content string
+	items   []ListItem
+}
+
+fn generate_li(data ListItem, list_type string) string {
+	if data.items.len > 0 {
+		lis := data.items.map(fn [list_type] (item ListItem) string {
+			return generate_li(item, list_type)
+		})
+
+		return '<li>${data.content}\n<${list_type}>${lis.join_lines()}</${list_type}></li>'
+	} else {
+		return '<li>${data.content}</li>'
+	}
+}
+
+pub fn generate_list(block &Block) string {
+	mut data := json.decode(ListData, block.data) or { ListData{} }
+
+	list_type := if data.style == 'ordered' { 'ol' } else { 'ul' }
+	lis := data.items.map(fn [list_type] (item ListItem) string {
+		return generate_li(item, list_type)
+	})
+
+	return '<${list_type}>${lis.join_lines()}</${list_type}>'
 }

@@ -411,7 +411,7 @@ fn test_upload_image() {
 
 	image_block := json.decode(vaunt.ImageBlockResponse, x.body) or { panic(err) }
 	assert image_block.success == 1
-	assert image_block.file['url'] == 'uploads/img/${files2[0].filename}'
+	assert image_block.file['url'] == '/uploads/img/${files2[0].filename}'
 
 	mut db := get_connection() or { panic(err) }
 	// img id should be 4

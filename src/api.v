@@ -302,13 +302,13 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 	if 'thumbnail' in app.files && is_empty('thumbnail-name', app.form) == false {
 		// TODO: remove old thumbnail img + plus check if its used elsewhere
 		img_name := sanitize_text_field(app.form['thumbnail-name'])
-		img_id, _ := app.upload_image(article_id, 'thumbnail', img_name) or {
+		img_id, img_src := app.upload_image(article_id, 'thumbnail', img_name) or {
 			app.set_status(500, '')
 			return app.text('error: failed to upload image')
 		}
 
 		sql app.db {
-			update Article set thumbnail = img_id where id == article_id
+			update Article set thumbnail = img_id, image_src = img_src where id == article_id
 		} or {
 			app.set_status(500, '')
 			return app.text('error: failed to update article')
@@ -351,8 +351,7 @@ fn (mut app Api) upload_image(article_id int, file_key string, img_name string) 
 	f.write(fdata)!
 	f.close()
 
-	// have to do this because windows appends a \r when posting FORMDATA???
-	upload_path := 'uploads/img/${replaced_name}'
+	upload_path := '/uploads/img/${replaced_name}'
 	img := Image{
 		name: replaced_name
 		src: upload_path
@@ -598,7 +597,9 @@ pub fn (mut app Api) delete_image_endpoint() vweb.Result {
 }
 
 fn (mut app Api) delete_image_file(article_id int, file_path string) ! {
-	img_url := os.join_path(os.base(app.upload_dir), 'img', os.base(file_path))
+	mut img_url := os.join_path(os.base(app.upload_dir), 'img', os.base(file_path))
+	// img url has '/' before it, because it needs to be available at all routes
+	img_url = '/'+img_url
 	// ignore for now, won't affect anything if this stays in the database
 	sql app.db {
 		delete from Image where src == img_url && article_id == article_id

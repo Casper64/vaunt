@@ -5,7 +5,7 @@ import Embed from '@editorjs/embed'
 import LinkTool from '@editorjs/link'
 import Paragraph from '@editorjs/paragraph'
 import Quote from '@editorjs/quote'
-// import NestedList from '@editorjs/nested-list'
+import NestedList from '@editorjs/nested-list'
 // import MermaidTool from 'editorjs-mermaid'
 import ImageTool from '@editorjs/image'
 import Header from '@editorjs/header'
@@ -85,13 +85,13 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
             },
             // TODO: lists will nest in a JSON structure, will enable lists when V
             // supports recursive structs.
-            // list: {
-            //     class: NestedList,
-            //     inlineToolbar: true,
-            //     config: {
-            //         defaultStyle : 'ordered'
-            //     }
-            // },
+            list: {
+                class: NestedList,
+                inlineToolbar: true,
+                config: {
+                    defaultStyle : 'ordered'
+                }
+            },
             code: {
                 class: CodeBlock
             },

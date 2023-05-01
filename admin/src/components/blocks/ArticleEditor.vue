@@ -37,7 +37,7 @@ async function submitHandler(data: CreateArticle) {
             
             // first block will never be changed since it contains the article name
             // so now we need to change it
-            blockStore.blocks[0].data.text = data.name
+            // blockStore.blocks[0].data.text = data.name
             await blockStore.save(article.value.id)
         }
     } catch (err: any) {
