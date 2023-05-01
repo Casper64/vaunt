@@ -12,6 +12,7 @@
 
 ## 0.3
 - [ ] Add layout blocks
+- [ ] Add authentication system so it's possible to have the server and editor online.
 - [ ] Import markdown feature
 - [ ] Documentation theme
 - [ ] Vaunt docs website
