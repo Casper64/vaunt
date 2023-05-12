@@ -11,8 +11,11 @@
 - [X] Add SEO e.g. OG meta tags, `sitemap.xml`
 
 ## 0.3
-- [ ] Add layout blocks
+- [ ] Article "tags"
+- [ ] Dockerfile for postgres database
 - [ ] Add authentication system so it's possible to have the server and editor online.
+- [ ] Add layout blocks
+- [ ] Reference article block
 - [ ] Import markdown feature
 - [ ] Documentation theme
 - [ ] Vaunt docs website
