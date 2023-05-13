@@ -2,11 +2,11 @@
 import ArticleThumbnail from '@/components/ArticleThumbnail.vue';
 import { FormKit } from '@formkit/vue';
 import { useArticleStore } from '@/stores/article';
-import { userCategoryStore } from '@/stores/category';
+import { useCategoryStore } from '@/stores/category';
 import { computed, ref } from 'vue';
 
 const articleStore = useArticleStore()
-const categoryStore = userCategoryStore()
+const categoryStore = useCategoryStore()
 const searchString = ref('')
 
 const filteredArticles = computed(() => {

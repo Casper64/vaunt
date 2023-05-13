@@ -3,11 +3,11 @@ import { ref } from 'vue'
 import { FormKit } from '@formkit/vue'
 import { useRouter } from 'vue-router';
 import { useArticleStore } from '@/stores/article';
-import { userCategoryStore } from '@/stores/category';
+import { useCategoryStore } from '@/stores/category';
 import { computed } from 'vue';
 
 const articleStore = useArticleStore()
-const categoryStore = userCategoryStore()
+const categoryStore = useCategoryStore()
 const router = useRouter()
 
 const errorMessage = ref('')

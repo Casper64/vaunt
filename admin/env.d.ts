@@ -49,3 +49,10 @@ interface ClassList {
     options: Record<string, string>
     selected: string
 }
+
+interface Tag {
+    id: number;
+    article_id: number;
+    color: string;
+    name: string;
+}

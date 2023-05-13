@@ -417,6 +417,134 @@ pub fn (mut app Api) save_blocks() vweb.Result {
 	return app.ok('updated block')
 }
 
+// 			Tags
+// ========================
+
+['/tags'; get; options]
+pub fn (mut app Api) get_tags() vweb.Result {
+	tags := get_all_tags(mut app.db)
+	return app.json(tags)
+}
+
+['/tags'; post]
+pub fn (mut app Api) create_tag(name string, color string) vweb.Result {
+	if name == '' || color == '' {
+		app.set_status(400, '')
+		return app.text('error: fields "name" and "color" are required')
+	}
+
+	mut tag := Tag{
+		name: sanitize_text_field(name)
+		color: sanitize_text_field(color)
+	}
+	println('new tag: ${tag}')
+
+	sql app.db {
+		insert tag into Tag
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not create tag')
+	}
+
+	tag.id = app.db.last_id()
+	return app.json(tag)
+}
+
+['/tags'; put]
+pub fn (mut app Api) update_tag(tag_id int) vweb.Result {
+	if tag_id == 0 || is_empty('name', app.form) || is_empty('color', app.form) {
+		app.set_status(400, '')
+		return app.text('error: fields "tag_id", "name" and "color" are required')
+	}
+	new_name := sanitize_text_field(app.form['name'])
+	new_color := sanitize_text_field(app.form['color'])
+
+	mut base_tag := get_tag_by_id(mut app.db, tag_id) or {
+		app.set_status(400, '')
+		return app.text('error: no base tag with id "${tag_id}" exists')
+	}
+
+	if base_tag.article_id != 0 {
+		app.set_status(400, '')
+		return app.text('error: no base tag with id "${tag_id}" exists')
+	}
+
+	sql app.db {
+		update Tag set name = new_name, color = new_color where name == new_name
+	} or {
+		app.set_status(500, '')
+		return app.text('error: could not update tag')
+	}
+
+	return app.json(base_tag)
+}
+
+['/tags/:article'; get; options]
+pub fn (mut app Api) get_tags_from_article(article int) vweb.Result {
+	tags := get_tags_from_article(mut app.db, article)
+	return app.json(tags)
+}
+
+['/tags/:article'; post]
+pub fn (mut app Api) add_tag_to_article(article int) vweb.Result {
+	if is_empty('tag_id', app.form) {
+		app.set_status(400, '')
+		return app.text('error: field "tag_id" is required')
+	}
+	tag_id := app.form['tag_id'].int()
+
+	mut tag := get_tag_by_id(mut app.db, tag_id) or {
+		app.set_status(400, '')
+		return app.text('error: tag with id "${tag_id}" does not exist')
+	}
+	tag.id = 0
+	tag.article_id = article
+
+	sql app.db {
+		insert tag into Tag
+	} or {
+		eprintln(err.msg())
+		app.set_status(500, '')
+		return app.text('error: could not add tag to article')
+	}
+
+	tag.id = app.db.last_id()
+	return app.json(tag)
+}
+
+['/tags/:tag_id'; delete]
+pub fn (mut app Api) delete_tag(tag_id int) vweb.Result {
+	if tag_id == 0 {
+		app.set_status(400, '')
+		return app.text('error: field "tag_id" is invalid')
+	}
+
+	base_tag := get_tag_by_id(mut app.db, tag_id) or {
+		app.set_status(400, '')
+		return app.text('error: no base tag with id "${tag_id}" exists')
+	}
+
+	if base_tag.article_id == 0 {
+		// base tag so remove all tags
+		sql app.db {
+			delete from Tag where name == base_tag.name
+		} or {
+			app.set_status(500, '')
+			return app.text('error: could not delete tag')
+		}
+	} else {
+		// tag that belongs to an article
+		sql app.db {
+			delete from Tag where id == base_tag.id
+		} or {
+			app.set_status(500, '')
+			return app.text('error: could not delete tag')
+		}
+	}
+
+	return app.ok('')
+}
+
 // used in editorjs Image block
 struct LinkData {
 pub mut:
@@ -599,7 +727,7 @@ pub fn (mut app Api) delete_image_endpoint() vweb.Result {
 fn (mut app Api) delete_image_file(article_id int, file_path string) ! {
 	mut img_url := os.join_path(os.base(app.upload_dir), 'img', os.base(file_path))
 	// img url has '/' before it, because it needs to be available at all routes
-	img_url = '/'+img_url
+	img_url = '/' + img_url
 	// ignore for now, won't affect anything if this stays in the database
 	sql app.db {
 		delete from Image where src == img_url && article_id == article_id

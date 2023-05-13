@@ -2,9 +2,9 @@
 import { ref } from 'vue'
 import { FormKit } from '@formkit/vue'
 import { useRouter } from 'vue-router';
-import { userCategoryStore } from '@/stores/category';
+import { useCategoryStore } from '@/stores/category';
 
-const categoryStore = userCategoryStore()
+const categoryStore = useCategoryStore()
 const router = useRouter()
 
 const errorMessage = ref('')
