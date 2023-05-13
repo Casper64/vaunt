@@ -1,23 +1,27 @@
 # Vaunt
 
-**Disclamer:** Vaunt is still early software and for now used as a showcase of the
-power that V and Vweb is capable of. There might be breaking changes in the future.
+**Current version:** 0.2
 
-Vaunt is a cms with visual editor written in [V](https://vlang.io/) that you can 
-use to generate static sites.
+Vaunt is a static site generator with built-in cms and visual block editor
+written in [V](https://vlang.io/).
+
+**Disclamer:** Vaunt is still early software. There might be breaking changes
+until 0.3, but these changes will be minor.
 
 **License**
-About the license: any websites generated with Vaunt are license free since they don't 
+About the license: any website generated with Vaunt is license free since it doesn't 
 contain any code used in this repository.
 
 ![vaunt_2](https://user-images.githubusercontent.com/43839798/232623199-0df92ccc-2b12-489c-9a35-b730b9c6476d.png)
 
 ## Features
-- Admin panel with visual editor
-- Image uploads
+- Admin panel with visual block editor for content creation
 - Fully static site generation
-- User configurable themes
 - easy to configure SEO (Search Engine Optimization)
+- User configurable themes
+- Image uploads
+
+
 
 ## Requirements
 Make sure you have V installed. You can check out the 
