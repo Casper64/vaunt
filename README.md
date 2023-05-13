@@ -476,7 +476,8 @@ pub fn get_tag_by_id(mut db pg.DB, tag int) !Tag
 
 ### Utility
 
-Vaunt offers a few utility functions that you can use in your app:
+Vaunt offers a few utility functions that you can use in your app for getting articles,
+categories and other stuff:
 see [util.v](src/util.v)
 
 
@@ -620,6 +621,21 @@ pub mut:
 	author          []string
 	section         string
 	tag             []string
+}
+```
+
+### Tags
+
+```v oksyntax
+// should use many to many relation, but that's not yet possible with orm
+// so there will be duplicates in the database :/
+[table: 'tags']
+pub struct Tag {
+pub mut:
+	id         int    [primary; sql: serial]
+	article_id int
+	name       string [nonull]
+	color      string [nonull]
 }
 ```
 

@@ -38,7 +38,7 @@ pub mut:
 }
 
 // should use many to many relation, but that's not yet possible with orm
-// so there will be duplicates in the database :(
+// so there will be duplicates in the database :/
 [table: 'tags']
 pub struct Tag {
 pub mut:
