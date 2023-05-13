@@ -121,3 +121,27 @@ pub fn get_image(mut db pg.DB, image_id int) !Image {
 	}
 	return images[0]
 }
+
+pub fn get_all_tags(mut db pg.DB) []Tag {
+	tags := sql db {
+		select from Tag where article_id == 0
+	} or { []Tag{} }
+	return tags
+}
+
+pub fn get_tags_from_article(mut db pg.DB, _article_id int) []Tag {
+	tags := sql db {
+		select from Tag where article_id == _article_id
+	} or { []Tag{} }
+	return tags
+}
+
+pub fn get_tag_by_id(mut db pg.DB, tag int) !Tag {
+	tags := sql db {
+		select from Tag where id == tag
+	}!
+	if tags.len == 0 {
+		return error('tag with id "${tag}" does not exist')
+	}
+	return tags[0]
+}

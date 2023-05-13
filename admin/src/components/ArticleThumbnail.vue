@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { useArticleStore } from '@/stores/article';
+import { useCategoryStore } from '@/stores/category';
 import { ref } from 'vue';
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 
 const props = defineProps<{
     articleId: number
+    withSettings?: boolean
 }>()
 
 const articleStore = useArticleStore()
+const categoryStore = useCategoryStore()
 const router = useRouter()
 
 const complete = ref(false)
@@ -56,7 +59,7 @@ async function publishHandler() {
             <h1>{{ article.name }}</h1>
             <p class="description">{{  article.description }}</p>
             <p class="date">{{  updated_date }}</p>
-            <div class="category-pill">category</div>
+            <div class="category-pill">{{ categoryStore.get(article.category_id)?.name }}</div>
         </div>
         <div class="thumbnail">
             <img alt="thumbnail" :src="thumbnailSource">
@@ -66,9 +69,9 @@ async function publishHandler() {
             <router-link :to="`/admin/edit/${article.id}`">
                 <FormKit type="button">Edit</FormKit>
             </router-link>
-            <!-- <router-link :to="`/admin/settings/${article.id}`">
+            <router-link v-if="!withSettings" :to="`/admin/article/${article.id}`">
                 <FormKit type="button">Settings</FormKit>
-            </router-link> -->
+            </router-link>
             <FormKit outer-class="delete-btn" type="button" @click="deletePost">Delete</FormKit>
         </div>
     </div>

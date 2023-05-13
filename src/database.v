@@ -10,6 +10,7 @@ fn init_database(db &pg.DB) ! {
 		create table Article
 		create table Image
 		create table ThemeOption
+		create table Tag
 	}!
 }
 
@@ -33,6 +34,18 @@ pub mut:
 	block_data  string [nonull]
 	created_at  string [default: 'CURRENT_TIMESTAMP'; sql_type: 'TIMESTAMP']
 	updated_at  string [default: 'now()'; sql_type: 'TIMESTAMP']
+	// tags []Tag [fkey: 'article_id'] // doesn't work???
+}
+
+// should use many to many relation, but that's not yet possible with orm
+// so there will be duplicates in the database :(
+[table: 'tags']
+pub struct Tag {
+pub mut:
+	id         int    [primary; sql: serial]
+	article_id int
+	name       string [nonull]
+	color      string [nonull]
 }
 
 [table: 'images']

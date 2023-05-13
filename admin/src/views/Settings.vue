@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { userCategoryStore } from '@/stores/category';
+import { useCategoryStore } from '@/stores/category';
 import { watch } from 'vue';
 import { ref } from 'vue'
 
-const categoryStore = userCategoryStore()
+const categoryStore = useCategoryStore()
 
 const complete = ref(false)
 const errorMessages = ref(new Array(categoryStore.categories.length).fill('') as string[])

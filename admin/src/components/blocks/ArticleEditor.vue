@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { useArticleStore } from '@/stores/article';
 import { useBlockStore } from '@/stores/blocks';
-import { zh } from '@formkit/i18n';
 import type { CreateArticle } from 'env';
 import { computed } from 'vue';
 import { ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { userCategoryStore } from '@/stores/category';
+import { useCategoryStore } from '@/stores/category';
 
 const store = useArticleStore()
-const categoryStore = userCategoryStore()
+const categoryStore = useCategoryStore()
 const route = useRoute()
 const complete = ref(false)
 const errorMessage = ref('')
@@ -132,7 +131,7 @@ const categoryOptions = computed(() => {
     row-gap: 20px;
     justify-items: center;
     grid-auto-rows: max-content;
-    overflow-y: scroll;
+    overflow-y: auto;
 
     hr {
         width: 100%;

@@ -2,7 +2,7 @@ import axios from '@/plugins/axios'
 import type { Category, CreateCategory } from 'env'
 import {defineStore} from 'pinia'
 
-export const userCategoryStore = defineStore('category', {
+export const useCategoryStore = defineStore('category', {
     state: () => {
         return {
             categories: [] as Category[]
