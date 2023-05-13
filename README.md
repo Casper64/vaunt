@@ -71,9 +71,9 @@ struct Theme{}
 // Base app for Vaunt which you can extend
 struct App {
 	vweb.Context
+	vweb.Controller
 	vaunt.Util
 pub:
-	controllers  []&vweb.ControllerPath
 	template_dir string                 [vweb_global]
 	upload_dir   string                 [vweb_global]
 pub mut:
