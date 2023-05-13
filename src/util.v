@@ -122,6 +122,7 @@ pub fn get_image(mut db pg.DB, image_id int) !Image {
 	return images[0]
 }
 
+// get all types of tags
 pub fn get_all_tags(mut db pg.DB) []Tag {
 	tags := sql db {
 		select from Tag where article_id == 0
@@ -129,6 +130,7 @@ pub fn get_all_tags(mut db pg.DB) []Tag {
 	return tags
 }
 
+// get all tags that belong to an article
 pub fn get_tags_from_article(mut db pg.DB, _article_id int) []Tag {
 	tags := sql db {
 		select from Tag where article_id == _article_id
@@ -136,6 +138,7 @@ pub fn get_tags_from_article(mut db pg.DB, _article_id int) []Tag {
 	return tags
 }
 
+// get a tag by id
 pub fn get_tag_by_id(mut db pg.DB, tag int) !Tag {
 	tags := sql db {
 		select from Tag where id == tag

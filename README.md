@@ -7,7 +7,6 @@ Vaunt is a cms with visual editor written in [V](https://vlang.io/) that you can
 use to generate static sites.
 
 **License**
-
 About the license: any websites generated with Vaunt are license free since they don't 
 contain any code used in this repository.
 
@@ -460,6 +459,20 @@ For all available options see [the SEO api](#seo).
 The `sitemap.xml` file is automatically generated if you provide `SEO.website_url`.
 
 ## Api
+
+### Tags
+Create the tags in the admin panel and use the following functions in your app:
+
+```v ignore
+// get all types of tags
+pub fn get_all_tags(mut db pg.DB) []Tag
+
+// get all tags that belong to an article
+pub fn get_tags_from_article(mut db pg.DB, _article_id int) []Tag
+
+// get a tag by id
+pub fn get_tag_by_id(mut db pg.DB, tag int) !Tag
+```
 
 ### Utility
 
