@@ -71,7 +71,7 @@ fn test_route_authorized() {
 
 	x = http.get('http://${localserver}/admin') or { panic(err) }
 	assert x.status() == .ok
-	assert x.body.contains('<title>Vaunt login</title>') == true
+	assert x.body.contains('<title>Vaunt Login</title>') == true
 
 	x = http.get('http://${localserver}/uploads') or { panic(err) }
 	assert x.status() != .unauthorized
