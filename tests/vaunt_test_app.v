@@ -49,7 +49,7 @@ fn main() {
 	db := pg.connect(user: os.args[3], password: os.args[4], dbname: os.args[5])!
 
 	// setup database and controllers
-	controllers := vaunt.init(db, template_dir, upload_dir, theme)!
+	controllers := vaunt.init(db, template_dir, upload_dir, theme, 'secret')!
 
 	// create the app
 	mut app := &App{
@@ -65,6 +65,8 @@ fn main() {
 	// start the Vaunt server
 	vaunt.start(mut app, http_port)!
 }
+
+pub fn (mut app App) before_request() {}
 
 ['/']
 pub fn (mut app App) home() vweb.Result {

@@ -11,6 +11,7 @@ import json
 
 pub struct Api {
 	vweb.Context
+	secret string [vweb_global]
 pub:
 	middlewares map[string][]vweb.Middleware = {
 		'/': [cors]
@@ -19,7 +20,7 @@ pub:
 	upload_dir   string [required; vweb_global]
 	articles_url string [required; vweb_global]
 pub mut:
-	db pg.DB [required; vweb_global]
+	db pg.DB [required]
 }
 
 // simple cors handler for admin panel dev server, that's also why you see method "options" on some routes
@@ -29,6 +30,10 @@ fn cors(mut ctx vweb.Context) bool {
 	ctx.add_header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, access-control-allow-credentials,access-control-allow-origin')
 	ctx.add_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
 	return true
+}
+
+pub fn (mut app Api) before_request() {
+	login_required_401(mut app.Context, app.secret)
 }
 
 // 			Categories

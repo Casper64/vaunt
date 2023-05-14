@@ -137,12 +137,17 @@ fn to_seperate_rgb(hex_color string) string {
 // Theme Api routes:
 struct ThemeHandler {
 	vweb.Context
+	secret string [vweb_global]
 pub:
 	middlewares map[string][]vweb.Middleware = {
 		'/': [cors]
 	}
 pub mut:
 	db pg.DB [required; vweb_global]
+}
+
+pub fn (mut app ThemeHandler) before_request() {
+	login_required_401(mut app.Context, app.secret)
 }
 
 ['/'; get; options]

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vaunt Login</title>
+
+    <style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    font-family: 'Roboto', sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: #fafafa;
+    display: grid;
+    grid-template-rows: max-content max-content;
+    align-content: center;
+    justify-items: center;
+}
+
+h1 {
+    color: #486581;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    background-color: white;
+    border: 1px solid #bfbfbf;
+    border-radius: 5px;
+    gap: 20px;
+    min-width: 350px;
+    min-height: 300px;
+    justify-content: center;
+}
+
+.card form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+p.error {
+    color: red;
+}
+
+label {
+    font-weight: 500;
+}
+
+button {
+    appearance: none;
+    outline: 0;
+    border: 0;
+    background-color: #68a1d1;
+    padding: 5px 25px;
+    border-radius: 5px;
+    color: white;
+    line-height: 30px;
+    height: 40px;
+    font-size: 16px;
+}
+
+input {
+    height: 32px;
+    font-size: 16px;
+}
+
+    </style>
+</head>
+<body>
+
+<h1>Vaunt Login</h1>
+<div class="card">
+    <form method="POST" action="/auth/login">
+        <label for="username">Username:</label>
+        <input name="username" id="username">
+        <label for="password">Password</label>
+        <input name="password" type="password" id="password">
+        <button type="submit">Submit</button>
+    </form>
+    @if app.form_error != ''
+    <p class="error">@app.form_error</p>
+    @end
+</div>
+
+</body>
+</html>
