@@ -12,7 +12,7 @@
 
 ## 0.3
 - [X] Article "tags"
-- [ ] Dockerfile for postgres database
+- [ ] Support for all databases in the `db` module
 - [ ] Add authentication system so it's possible to have the server and editor online.
 - [ ] Add layout blocks
 - [ ] Reference article block
