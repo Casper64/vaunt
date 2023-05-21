@@ -63,6 +63,7 @@ import db.pg
 const (
 	template_dir = os.abs_path('templates') // where you want to store templates
 	upload_dir   = os.abs_path('uploads') // where you want to store uploads
+	app_secret   = 'my-256-bit-secret' // secret key used to generate secure hashes
 )
 
 // Your theme settings
@@ -90,7 +91,7 @@ fn main() {
 	theme := Theme{}
 	
 	// setup database and controllers
-	controllers := vaunt.init(db, template_dir, upload_dir, theme)!
+	controllers := vaunt.init(db, template_dir, upload_dir, theme, app_secret)!
 
 	// create the app
 	mut app := &App{
@@ -119,8 +120,65 @@ You can start the application with `v watch run main.v` for single files. If you
 multiple `.v` files you can put them in the `src` folder and run `v watch run src`.
 
 ## Admin panel
-The admin panel is used to created articles via a visual editor. You can access the 
-admin panel by navigating to `"/admin"`. The UI should be self-explanatory.
+The admin panel is used to created articles via a visual editor. You can access the
+admin panel by navigating to `"/admin"`.
+
+### Create a user
+To be able to access the admin you will need to create a superuser.
+
+```bash
+v run src --create-superuser
+```
+
+Follow the instructions after which you can log in with the created user and password.
+
+### Authentication settings
+By default, the API and admin panel can only be accessed when authenticated.
+Vaunt includes 3 function with which you can protect your routes / app.
+
+**Only allow authenticated users, else redirect to login page**:
+```v ignore
+vaunt.login_required(mut app.Context, app_secret)
+```
+
+**Only allow authenticated users, else send HTTP 401**:
+```v ignore
+login_required_401(mut app.Context, app_secret)
+```
+
+Or you can check if the current user is a superuser and set `vaunt.Util.is_superuser`
+
+**Example**:
+```v ignore
+app.is_superuser = vaunt.is_superuser(mut app.Context, app_secret)
+```
+
+You can put either one of these functions in `pub fn (mut app App) before_request()`
+to enable them for your whole app. Or call them in individual routes.
+
+### Caveats
+When you generate the site all forms of authentication will be skipped,
+except if you return early.
+
+**Example**:
+```v
+// no_auth will output a html page with "content"
+pub fn (mut app App) no_early_exit() vweb.Result {
+	login_required(mut app.Context, app_secret)
+	app.s_html = 'content'
+	return app.html('content')
+}
+
+// early exit and skip generation
+pub fn (mut app App) with_early_exit() vweb.Result {
+	if login_required(mut app.Context, app_secret) == false {
+		// special field on `vaunt.Util`
+		return app.skip_generation
+	}
+	app.s_html = 'content'
+	return app.html('content')
+}
+```
 
 ## Theme Settings
 It is possible to make you theme configurable in the admin panel.

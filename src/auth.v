@@ -23,6 +23,7 @@ const (
 
 // 			Auth endpoint
 // ==============================
+
 pub struct Auth {
 	vweb.Context
 	secret string [vweb_global]
@@ -42,6 +43,7 @@ pub fn (mut app Auth) login() vweb.Result {
 
 ['/login'; post]
 pub fn (mut app Auth) login_user(username string, password string) vweb.Result {
+	// if jwt is valid make a cookie and redirect to admin
 	if user := verify_user(mut app.db, username, password) {
 		token := make_token(user, app.secret)
 
@@ -59,6 +61,8 @@ pub fn (mut app Auth) logout() vweb.Result {
 	return app.redirect('/')
 }
 
+// make_cookie returns a cookie with value `token` and the `expires` time.
+// It is filled with secure default values according to OWASP
 fn make_cookie(token string, expires time.Time) http.Cookie {
 	return http.Cookie{
 		name: vaunt.jwt_cookie_name
@@ -74,6 +78,7 @@ fn make_cookie(token string, expires time.Time) http.Cookie {
 
 // 			User
 // =======================
+
 [table: 'users']
 pub struct User {
 	id       int    [primary; sql: serial]
@@ -81,6 +86,7 @@ pub struct User {
 	password string [nonull; sql_type: 'TEXT']
 }
 
+// verify_user checks `db` if a user exists with username=`uname` and password=`upass`
 fn verify_user(mut db pg.DB, uname string, upass string) !User {
 	mut expected_hash := ''
 	rows := sql db {
@@ -142,23 +148,25 @@ fn auth_verify(secret string, token string) bool {
 
 // 			Auth Utility
 // ===============================
-pub fn login_required(mut ctx vweb.Context, secret string) {
+pub fn login_required(mut ctx vweb.Context, secret string) bool {
 	if token := ctx.get_cookie(vaunt.jwt_cookie_name) {
 		if quick_verify(token) && auth_verify(secret, token) {
-			return
+			return true
 		}
 	}
 	ctx.redirect('/auth/login')
+	return false
 }
 
-pub fn login_required_401(mut ctx vweb.Context, secret string) {
+pub fn login_required_401(mut ctx vweb.Context, secret string) bool {
 	if token := ctx.get_cookie(vaunt.jwt_cookie_name) {
 		if quick_verify(token) && auth_verify(secret, token) {
-			return
+			return true
 		}
 	}
 	ctx.set_status(401, '')
 	ctx.text('HTTP 401: Forbidden')
+	return false
 }
 
 // is_superuser checks the cookies and returns true if a user is logged in -> superuser

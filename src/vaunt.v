@@ -141,7 +141,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 		$if method.return_type is vweb.Result {
 			routes << method.name
 
-			// validate routes
+			// validate routes at comptime
 			if method.name == 'article_page' {
 				if method.attrs.any(it.starts_with('/articles/:')) == false {
 					eprintln('error: expecting method "article_page" to be a dynamic route that starts with "/articles/"')
@@ -181,20 +181,20 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 				app.$method()
 				if app.s_html.len == 0 {
 					eprintln('warning: method "${method.name}" produced no html! Did you forget to set `app.s_html`?')
+				} else {
+					mut index_f := os.create(file_path)!
+					index_f.write(app.s_html.bytes())!
+					index_f.close()
+
+					// reset app
+					app.s_html = ''
+					$if T is SEOInterface {
+						app.seo = initial_seo
+					}
+
+					i_end := time.ticks()
+					println('[Vaunt] Generated page "${output_file}" in ${i_end - i_start}ms')
 				}
-
-				mut index_f := os.create(file_path)!
-				index_f.write(app.s_html.bytes())!
-				index_f.close()
-
-				// reset app
-				app.s_html = ''
-				$if T is SEOInterface {
-					app.seo = initial_seo
-				}
-
-				i_end := time.ticks()
-				println('[Vaunt] Generated page "${output_file}" in ${i_end - i_start}ms')
 			}
 		}
 	}

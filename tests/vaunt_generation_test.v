@@ -152,9 +152,7 @@ fn test_about_page() {
 fn test_empty_page() {
 	file := os.join_path(output_dir, 'empty.html')
 
-	assert os.exists(file) == true
-	contents := os.read_file(file)!
-	assert contents == ''
+	assert os.exists(file) == false
 }
 
 fn test_nested_index() {
