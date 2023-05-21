@@ -1,10 +1,16 @@
 module vaunt
 
 import db.pg
+import vweb
+
+type SkipGenerationResult = vweb.Result
 
 pub struct Util {
+pub:
+	skip_generation SkipGenerationResult = SkipGenerationResult{}
 pub mut:
-	theme_css string
+	theme_css    string
+	is_superuser bool
 }
 
 // get the correct url in your templates with a category

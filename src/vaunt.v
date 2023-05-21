@@ -6,7 +6,7 @@ import os
 import flag
 import time
 
-pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T) ![]&vweb.ControllerPath {
+pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T, secret string) ![]&vweb.ControllerPath {
 	init_database(db)!
 	update_theme_db(db, theme)!
 
@@ -17,8 +17,14 @@ pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T) ![]&
 	// ensure upload dir exists
 	os.mkdir_all(upload_dir)!
 
+	mut auth_app := &Auth{
+		secret: secret
+		db: db
+	}
+
 	// Api app
 	mut api_app := &Api{
+		secret: secret
 		db: db
 		template_dir: template_dir
 		upload_dir: upload_dir
@@ -26,6 +32,7 @@ pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T) ![]&
 	}
 
 	mut theme_app := &ThemeHandler{
+		secret: secret
 		db: db
 	}
 
@@ -39,6 +46,7 @@ pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T) ![]&
 
 	// Admin app
 	mut admin_app := &Admin{
+		secret: secret
 		db: db
 	}
 
@@ -48,6 +56,7 @@ pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T) ![]&
 	admin_app.serve_static('/index.html', '${dist_path}/index.html')
 
 	controllers := [
+		vweb.controller('/auth', auth_app),
 		vweb.controller('/api/theme', theme_app),
 		vweb.controller('/api', api_app),
 		vweb.controller('/admin', admin_app),
@@ -59,12 +68,15 @@ pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T) ![]&
 pub fn start[T](mut app T, port int) ! {
 	mut fp := flag.new_flag_parser(os.args)
 	fp.application('Vaunt')
-	fp.version('0.0.1')
+	fp.version('0.2')
 	fp.description('Simple static site generator for articles')
 	fp.skip_executable()
+
 	f_user := fp.bool('user', `u`, false, 'user mode (not dev), ignored when generating the site')
 	f_generate := fp.bool('generate', `g`, false, 'generate the site')
 	f_output := fp.string('out', `o`, 'public', 'output dir')
+	f_create_user := fp.bool('create-superuser', ` `, false, 'create a new superuser')
+
 	fp.finalize() or {
 		println(fp.usage())
 		return
@@ -73,6 +85,11 @@ pub fn start[T](mut app T, port int) ! {
 	if f_generate {
 		app.dev = false
 		start_site_generation[T](mut app, f_output)!
+		return
+	}
+
+	if f_create_user {
+		create_super_user(mut app.db)!
 		return
 	}
 
@@ -124,7 +141,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 		$if method.return_type is vweb.Result {
 			routes << method.name
 
-			// validate routes
+			// validate routes at comptime
 			if method.name == 'article_page' {
 				if method.attrs.any(it.starts_with('/articles/:')) == false {
 					eprintln('error: expecting method "article_page" to be a dynamic route that starts with "/articles/"')
@@ -164,20 +181,20 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 				app.$method()
 				if app.s_html.len == 0 {
 					eprintln('warning: method "${method.name}" produced no html! Did you forget to set `app.s_html`?')
+				} else {
+					mut index_f := os.create(file_path)!
+					index_f.write(app.s_html.bytes())!
+					index_f.close()
+
+					// reset app
+					app.s_html = ''
+					$if T is SEOInterface {
+						app.seo = initial_seo
+					}
+
+					i_end := time.ticks()
+					println('[Vaunt] Generated page "${output_file}" in ${i_end - i_start}ms')
 				}
-
-				mut index_f := os.create(file_path)!
-				index_f.write(app.s_html.bytes())!
-				index_f.close()
-
-				// reset app
-				app.s_html = ''
-				$if T is SEOInterface {
-					app.seo = initial_seo
-				}
-
-				i_end := time.ticks()
-				println('[Vaunt] Generated page "${output_file}" in ${i_end - i_start}ms')
 			}
 		}
 	}

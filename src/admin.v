@@ -6,8 +6,13 @@ import os
 
 pub struct Admin {
 	vweb.Context
+	secret string [vweb_global]
 pub mut:
 	db pg.DB [required; vweb_global]
+}
+
+pub fn (mut app Admin) before_request() {
+	login_required(mut app.Context, app.secret)
 }
 
 ['/']

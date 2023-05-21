@@ -5,12 +5,14 @@ import db.pg
 fn init_database(db &pg.DB) ! {
 	println('[Vaunt] Starting db...')
 
+	// for `User` definition see `auth.v`
 	sql db {
 		create table Category
 		create table Article
 		create table Image
 		create table ThemeOption
 		create table Tag
+		create table User
 	}!
 }
 

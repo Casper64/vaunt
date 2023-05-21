@@ -19,6 +19,8 @@ const (
 	static_dir             = os.abs_path('tests/static')
 	upload_dir             = os.abs_path('tests/uploads')
 
+	jwt_token              = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwIiwibmFtZSI6ImFkbWluIiwiaWF0IjoxNjg0MDkwMTgwfQ.OJvgvMZ2uS6odHQ6vfp9zMnV765ssH4bjcppDKUxS9k'
+
 	article_names          = ['normal', 'with space', 'differentCaps', 'without category']
 	category_names         = ['web', 'category space', 'categoryCaps', '']
 	correct_article_names  = ['normal', 'with-space', 'differentcaps', 'without-category']
@@ -80,14 +82,14 @@ fn test_generate_succeeds() {
 	assert result.exit_code == 0
 
 	// test custom output dir
-	assert result.output.contains('"${output_dir}"')
+	assert result.output.contains('"${output_dir}"') == true
 	assert os.exists(output_dir) == true
 
 	// test empty page warning
-	assert result.output.contains('warning: method "empty" produced no html! Did you forget to set `app.s_html`?')
+	assert result.output.contains('warning: method "empty" produced no html! Did you forget to set `app.s_html`?') == true
 
 	// test dynamic route warning
-	assert result.output.contains('error while generating "custom_dynamic": generating custom dynamic routes is not supported yet!')
+	assert result.output.contains('error while generating "custom_dynamic": generating custom dynamic routes is not supported yet!') == true
 }
 
 fn test_file_and_folder_names() {
@@ -150,9 +152,7 @@ fn test_about_page() {
 fn test_empty_page() {
 	file := os.join_path(output_dir, 'empty.html')
 
-	assert os.exists(file) == true
-	contents := os.read_file(file)!
-	assert contents == ''
+	assert os.exists(file) == false
 }
 
 fn test_nested_index() {
@@ -279,7 +279,7 @@ fn create_category(name string) !vaunt.Category {
 	form_data := {
 		'name': name
 	}
-	mut x := http.post_form('http://${localserver}/api/categories', form_data)!
+	mut x := do_post_form('http://${localserver}/api/categories', form_data)!
 	return json.decode(vaunt.Category, x.body)!
 }
 
@@ -291,11 +291,23 @@ fn create_article(name string, description string, block_data string, category i
 		'category':    category.str()
 		'show':        if show { 'true' } else { '' }
 	}
-	mut x := http.post_form('http://${localserver}/api/articles', form_data)!
+	mut x := do_post_form('http://${localserver}/api/articles', form_data)!
 	return json.decode(vaunt.Article, x.body)!
 }
 
 fn to_url(url string) string {
 	file := os.join_path(seo_url, url) + '.html'
 	return '<loc>${file}</loc>'
+}
+
+fn do_post_form(url string, form map[string]string) !http.Response {
+	req := http.Request{
+		method: .post
+		data: http.url_encode_form_data(form)
+		url: url
+		cookies: {
+			'vaunt_token': jwt_token
+		}
+	}
+	return req.do()!
 }

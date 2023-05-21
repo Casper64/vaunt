@@ -14,6 +14,9 @@ const (
 	db_user         = 'dev'
 	db_password     = 'password'
 	db_name         = 'vaunt-test'
+
+	vaunt_username  = 'admin'
+	jwt_token       = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwIiwibmFtZSI6ImFkbWluIiwiaWF0IjoxNjg0MDkwMTgwfQ.OJvgvMZ2uS6odHQ6vfp9zMnV765ssH4bjcppDKUxS9k'
 )
 
 // setup of vaunt webserver
@@ -31,6 +34,7 @@ fn test_setup_database() {
 	db.drop('categories') or {}
 	db.drop('articles') or {}
 	db.drop('images') or {}
+	db.drop('users') or {}
 }
 
 fn test_vaunt_app_can_be_compiled() {
@@ -58,12 +62,49 @@ fn test_vaunt_runs_in_background() {
 	}
 }
 
+fn test_route_authorized() {
+	mut x := http.get('http://${localserver}/') or { panic(err) }
+	assert x.status() == .ok
+
+	x = http.get('http://${localserver}/auth/login') or { panic(err) }
+	assert x.status() == .ok
+
+	x = http.get('http://${localserver}/admin') or { panic(err) }
+	assert x.status() == .ok
+	assert x.body.contains('<title>Vaunt Login</title>') == true
+
+	x = http.get('http://${localserver}/uploads') or { panic(err) }
+	assert x.status() != .unauthorized
+}
+
+fn test_routes_unauthorized() {
+	// Api App
+	mut x := http.get('http://${localserver}/api/articles') or { panic(err) }
+	assert x.status() == .unauthorized
+	// ThemeHandler App
+	x = http.get('http://${localserver}/api/theme') or { panic(err) }
+	assert x.status() == .unauthorized
+}
+
+fn test_create_user() {
+	mut db := get_connection() or { panic(err) }
+
+	user := vaunt.User{
+		username: vaunt_username
+		// precalculated
+		password: r'$2a$10$NgvETQhHdkWMc4sq3EzTbAbUmzs+ACZ0htSbOz4AJnSG1Js7PgAmc'
+	}
+	sql db {
+		insert user into vaunt.User
+	} or { panic(err) }
+}
+
 // 		Articles
 // ==================
 
 fn test_no_articles() {
 	json_empty_articles := json.encode([]vaunt.Article{})
-	x := http.get('http://${localserver}/api/articles') or { panic(err) }
+	x := do_get('http://${localserver}/api/articles') or { panic(err) }
 
 	assert x.header.get(.content_type)! == 'application/json'
 	assert x.body == json_empty_articles
@@ -76,22 +117,22 @@ fn test_create_article() {
 	mut form := map[string]string{}
 
 	// test errors
-	mut x := http.post_form('http://${localserver}/api/articles', form) or { panic(err) }
+	mut x := do_post_form('http://${localserver}/api/articles', form) or { panic(err) }
 	assert x.status() == .bad_request
 	assert x.body == 'error: field "name" and "description" are required'
 
 	form['description'] = 'test description'
-	x = http.post_form('http://${localserver}/api/articles', form) or { panic(err) }
+	x = do_post_form('http://${localserver}/api/articles', form) or { panic(err) }
 	assert x.status() == .bad_request
 	assert x.body == 'error: field "name" and "description" are required'
 
 	form['name'] = 'test'
-	x = http.post_form('http://${localserver}/api/articles', form) or { panic(err) }
+	x = do_post_form('http://${localserver}/api/articles', form) or { panic(err) }
 	assert x.status() == .bad_request
 	assert x.body == 'error: must provide default "block_data" when creating an article'
 
 	form['block_data'] = '{}'
-	x = http.post_form('http://${localserver}/api/articles', form) or { panic(err) }
+	x = do_post_form('http://${localserver}/api/articles', form) or { panic(err) }
 	assert x.status() == .ok
 	assert x.header.get(.content_type)! == 'application/json'
 
@@ -103,7 +144,7 @@ fn test_create_article() {
 	assert article.block_data == form['block_data']
 
 	// test inserted into database
-	x = http.get('http://${localserver}/api/articles/${article.id}') or { panic(err) }
+	x = do_get('http://${localserver}/api/articles/${article.id}') or { panic(err) }
 	assert x.status() == .ok
 	fetched_article := json.decode(vaunt.Article, x.body) or { panic(err) }
 	assert fetched_article == article
@@ -112,15 +153,15 @@ fn test_create_article() {
 fn test_delete_article() {
 	new_article := create_article('to_delete', 'should be deleted', '{}') or { panic(err) }
 
-	mut x := http.get('http://${localserver}/api/articles') or { panic(err) }
+	mut x := do_get('http://${localserver}/api/articles') or { panic(err) }
 	mut all_articles := json.decode([]vaunt.Article, x.body) or { panic(err) }
 	prev_len := all_articles.len
 
-	x = http.delete('http://${localserver}/api/articles/${new_article.id}') or { panic(err) }
+	x = do_delete('http://${localserver}/api/articles/${new_article.id}') or { panic(err) }
 	assert x.status() == .ok
 	assert x.body == 'deleted article with id ${new_article.id}'
 
-	x = http.get('http://${localserver}/api/articles') or { panic(err) }
+	x = do_get('http://${localserver}/api/articles') or { panic(err) }
 	all_articles = json.decode([]vaunt.Article, x.body) or { panic(err) }
 	assert prev_len == all_articles.len + 1
 }
@@ -144,8 +185,7 @@ fn test_create_article_with_image() {
 			'thumbnail': files
 		}
 	}
-
-	mut x := http.post_multipart_form('http://${localserver}/api/articles', form_config)!
+	mut x := do_post_multipart_form('http://${localserver}/api/articles', form_config)!
 	assert x.status() == .ok
 	article := json.decode(vaunt.Article, x.body) or { panic(err) }
 	assert article.thumbnail != 0
@@ -158,22 +198,22 @@ fn test_create_article_with_image() {
 	assert txt_data == files[0].data
 
 	// test if file is accessible via the Vaunt server
-	x = http.get('http://${localserver}/${article.image_src}') or { panic(err) }
+	x = do_get('http://${localserver}/${article.image_src}') or { panic(err) }
 	assert x.header.get(.content_type)! == files[0].content_type
 	assert x.body == files[0].data
 }
 
 fn test_delete_article_with_image() {
-	mut x := http.delete('http://${localserver}/api/articles/s') or { panic(err) }
+	mut x := do_delete('http://${localserver}/api/articles/s') or { panic(err) }
 	assert x.status() == .bad_request
 	assert x.body == 'error: "id" is not a number'
 
-	x = http.get('http://${localserver}/api/articles/3') or { panic(err) }
+	x = do_get('http://${localserver}/api/articles/3') or { panic(err) }
 	article := json.decode(vaunt.Article, x.body) or { panic(err) }
 	assert article.image_src != ''
 
 	// last article id is 3
-	x = http.delete('http://${localserver}/api/articles/3') or { panic(err) }
+	x = do_delete('http://${localserver}/api/articles/3') or { panic(err) }
 	assert x.status() == .ok
 	assert x.body == 'deleted article with id 3'
 
@@ -201,7 +241,7 @@ fn test_delete_article_with_conflicting_images() {
 		}
 	}
 
-	mut x := http.post_multipart_form('http://${localserver}/api/articles', form_config)!
+	mut x := do_post_multipart_form('http://${localserver}/api/articles', form_config)!
 	assert x.status() == .ok
 	article1 := json.decode(vaunt.Article, x.body)!
 
@@ -216,12 +256,12 @@ fn test_delete_article_with_conflicting_images() {
 			'thumbnail': files
 		}
 	}
-	x = http.post_multipart_form('http://${localserver}/api/articles', form_config2)!
+	x = do_post_multipart_form('http://${localserver}/api/articles', form_config2)!
 	assert x.status() == .ok
 
 	// when the article1 gets deleted `duplicate.txt` should not get deleted
 	// since it's still used by article2
-	x = http.delete('http://${localserver}/api/articles/${article1.id}') or { panic(err) }
+	x = do_delete('http://${localserver}/api/articles/${article1.id}') or { panic(err) }
 	assert x.status() == .ok
 
 	mut db := get_connection() or { panic(err) }
@@ -247,6 +287,9 @@ fn test_update_not_existing_article() {
 		url: 'http://${localserver}/api/articles/88'
 		header: http.new_header(key: .content_type, value: 'application/x-www-form-urlencoded')
 		data: http.url_encode_form_data(form_data)
+		cookies: {
+			'vaunt_token': jwt_token
+		}
 	) or { panic(err) }
 	assert x.status() == .bad_request
 	assert x.body == 'error: article with id "88" does not exist'
@@ -265,10 +308,13 @@ fn test_update_article() {
 		url: 'http://${localserver}/api/articles/${article.id}'
 		header: http.new_header(key: .content_type, value: 'application/x-www-form-urlencoded')
 		data: http.url_encode_form_data(form_data)
+		cookies: {
+			'vaunt_token': jwt_token
+		}
 	) or { panic(err) }
 	assert x.status() == .ok
 
-	x = http.get('http://${localserver}/api/articles/${article.id}') or { panic(err) }
+	x = do_get('http://${localserver}/api/articles/${article.id}') or { panic(err) }
 	mut new_article := json.decode(vaunt.Article, x.body) or { panic(err) }
 	assert new_article.name == form_data['name']
 	assert new_article.description == form_data['description']
@@ -281,10 +327,13 @@ fn test_update_article() {
 		data: http.url_encode_form_data({
 			'show': 'true'
 		})
+		cookies: {
+			'vaunt_token': jwt_token
+		}
 	) or { panic(err) }
 	assert x.status() == .ok
 
-	x = http.get('http://${localserver}/api/articles/${article.id}') or { panic(err) }
+	x = do_get('http://${localserver}/api/articles/${article.id}') or { panic(err) }
 	new_article = json.decode(vaunt.Article, x.body) or { panic(err) }
 	assert new_article.show == true
 }
@@ -311,7 +360,7 @@ fn test_get_blocks() {
 	}
 	article := create_article('blocks', 'blocks test', json.encode(blocks)) or { panic(err) }
 
-	mut x := http.get('http://${localserver}/api/blocks?article=${article.id}') or { panic(err) }
+	mut x := do_get('http://${localserver}/api/blocks?article=${article.id}') or { panic(err) }
 	assert x.status() == .ok
 	assert x.header.get(.content_type)! == 'application/json'
 	fetched_blocks := json.decode([]vaunt.Block, x.body) or { panic(err) }
@@ -334,19 +383,19 @@ fn test_update_block() {
 		data: json.encode(block_data)
 	}
 
-	mut x := http.get('http://${localserver}/api/articles') or { panic(err) }
+	mut x := do_get('http://${localserver}/api/articles') or { panic(err) }
 	all_articles := json.decode([]vaunt.Article, x.body) or { panic(err) }
 	assert all_articles.len > 0
 	last_article := all_articles.last()
 
 	data := json.encode(blocks)
-	x = http.post('http://${localserver}/api/blocks?article=${last_article.id}', data) or {
+	x = do_post('http://${localserver}/api/blocks?article=${last_article.id}', data) or {
 		panic(err)
 	}
 	assert x.status() == .ok
 	assert x.body == 'updated block'
 
-	x = http.get('http://${localserver}/api/blocks?article=${last_article.id}') or { panic(err) }
+	x = do_get('http://${localserver}/api/blocks?article=${last_article.id}') or { panic(err) }
 	new_blocks := json.decode([]vaunt.Block, x.body)!
 	assert new_blocks.len == blocks.len
 	assert blocks[0] == new_blocks[0]
@@ -356,11 +405,11 @@ fn test_update_block() {
 // ========================
 
 fn test_upload_image() {
-	mut x := http.post('http://${localserver}/api/upload-image', '') or { panic(err) }
+	mut x := do_post('http://${localserver}/api/upload-image', '') or { panic(err) }
 	assert x.status() == .bad_request
 	assert x.body == 'error: field "article" is required'
 
-	x = http.post_form('http://${localserver}/api/upload-image', {
+	x = do_post_form('http://${localserver}/api/upload-image', {
 		'article': '1'
 	}) or { panic(err) }
 	assert x.status() == .bad_request
@@ -379,9 +428,8 @@ fn test_upload_image() {
 		files: {
 			'image': files
 		}
-		header: http.Header{}
 	}
-	x = http.post_multipart_form('http://${localserver}/api/upload-image', form_config) or {
+	x = do_post_multipart_form('http://${localserver}/api/upload-image', form_config) or {
 		panic(err)
 	}
 	assert x.status() == .bad_request
@@ -400,10 +448,9 @@ fn test_upload_image() {
 		files: {
 			'image': files2
 		}
-		header: http.Header{}
 	}
 
-	x = http.post_multipart_form('http://${localserver}/api/upload-image', form_config2) or {
+	x = do_post_multipart_form('http://${localserver}/api/upload-image', form_config2) or {
 		panic(err)
 	}
 	assert x.status() == .ok
@@ -423,11 +470,11 @@ fn test_upload_image() {
 }
 
 fn test_delete_image() {
-	mut x := http.post('http://${localserver}/api/delete-image', '') or { panic(err) }
+	mut x := do_post('http://${localserver}/api/delete-image', '') or { panic(err) }
 	assert x.status() == .bad_request
 	assert x.body == 'error: fields "image" and "article" are required'
 
-	x = http.post_form('http://${localserver}/api/delete-image', {
+	x = do_post_form('http://${localserver}/api/delete-image', {
 		'image':   'data.txt'
 		'article': '1'
 	}) or { panic(err) }
@@ -468,11 +515,72 @@ fn create_article(name string, description string, block_data string) !vaunt.Art
 		'description': description
 		'block_data':  block_data
 	}
-	mut x := http.post_form('http://${localserver}/api/articles', form_data)!
+	mut x := do_post_form('http://${localserver}/api/articles', form_data)!
 	return json.decode(vaunt.Article, x.body)!
 }
 
 fn get_connection() !pg.DB {
 	mut db := pg.connect(user: db_user, password: db_password, dbname: db_name)!
 	return db
+}
+
+fn do_get(url string) !http.Response {
+	req := http.Request{
+		method: .get
+		url: url
+		cookies: {
+			'vaunt_token': jwt_token
+		}
+	}
+	return req.do()!
+}
+
+fn do_post(url string, data string) !http.Response {
+	req := http.Request{
+		method: .post
+		data: data
+		url: url
+		cookies: {
+			'vaunt_token': jwt_token
+		}
+	}
+	return req.do()!
+}
+
+fn do_delete(url string) !http.Response {
+	req := http.Request{
+		method: .delete
+		url: url
+		cookies: {
+			'vaunt_token': jwt_token
+		}
+	}
+	return req.do()!
+}
+
+fn do_post_form(url string, form map[string]string) !http.Response {
+	req := http.Request{
+		method: .post
+		data: http.url_encode_form_data(form)
+		url: url
+		cookies: {
+			'vaunt_token': jwt_token
+		}
+	}
+	return req.do()!
+}
+
+fn do_post_multipart_form(url string, conf http.PostMultipartFormConfig) !http.Response {
+	body, boundary := http.multipart_form_body(conf.form, conf.files)
+	mut header := conf.header
+	header.set(.content_type, 'multipart/form-data; boundary="${boundary}"')
+	return http.fetch(
+		method: .post
+		url: url
+		header: header
+		cookies: {
+			'vaunt_token': jwt_token
+		}
+		data: body
+	)!
 }
