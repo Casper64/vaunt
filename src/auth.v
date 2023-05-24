@@ -44,7 +44,7 @@ pub fn (mut app Auth) login() vweb.Result {
 ['/login'; post]
 pub fn (mut app Auth) login_user(username string, password string) vweb.Result {
 	// if jwt is valid make a cookie and redirect to admin
-	if user := verify_user(mut app.db, username, password) {
+	if user := verify_user(app.db, username, password) {
 		token := make_token(user, app.secret)
 
 		app.set_cookie(make_cookie(token, vaunt.cookie_live_time))
@@ -87,7 +87,7 @@ pub struct User {
 }
 
 // verify_user checks `db` if a user exists with username=`uname` and password=`upass`
-fn verify_user(mut db pg.DB, uname string, upass string) !User {
+fn verify_user(db pg.DB, uname string, upass string) !User {
 	mut expected_hash := ''
 	rows := sql db {
 		select from User where username == uname
@@ -187,7 +187,7 @@ fn quick_verify(token string) bool {
 // =======================
 
 // create_super_user creates a superuser via CLI
-fn create_super_user(mut db pg.DB) ! {
+fn create_super_user(db pg.DB) ! {
 	current_users := sql db {
 		select from User
 	}!

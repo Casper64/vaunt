@@ -266,7 +266,7 @@ fn test_delete_article_with_conflicting_images() {
 
 	mut db := get_connection() or { panic(err) }
 	// img id should be 4
-	image := vaunt.get_image(mut db, article1.thumbnail) or {
+	image := vaunt.get_image(db, article1.thumbnail) or {
 		assert err.msg() == 'image was not found'
 		vaunt.Image{}
 	}
@@ -462,7 +462,7 @@ fn test_upload_image() {
 
 	mut db := get_connection() or { panic(err) }
 	// img id should be 4
-	image := vaunt.get_image(mut db, 4) or {
+	image := vaunt.get_image(db, 4) or {
 		assert err.msg() == ''
 		vaunt.Image{}
 	}
@@ -484,7 +484,7 @@ fn test_delete_image() {
 
 	mut db := get_connection() or { panic(err) }
 	// deleted img id should be 4
-	if _ := vaunt.get_image(mut db, 4) {
+	if _ := vaunt.get_image(db, 4) {
 		assert true == false
 	}
 }

@@ -40,7 +40,7 @@ pub fn (mut app Api) before_request() {
 // ==========================
 ['/categories'; get; options]
 pub fn (mut app Api) get_categories() vweb.Result {
-	categories := get_all_categories(mut app.db)
+	categories := get_all_categories(app.db)
 	return app.json(categories)
 }
 
@@ -55,7 +55,7 @@ pub fn (mut app Api) create_category() vweb.Result {
 		name: capitalize_text_field(app.form['name'])
 	}
 
-	check_category_article_name_collision(mut app.db, new_category.name) or {
+	check_category_article_name_collision(app.db, new_category.name) or {
 		app.set_status(400, '')
 		return app.text(err.msg())
 	}
@@ -116,13 +116,13 @@ pub fn (mut app Api) update_category(category_id int) vweb.Result {
 
 	new_name := capitalize_text_field(app.form['name'])
 
-	current_category := get_category_by_id(mut app.db, category_id) or {
+	current_category := get_category_by_id(app.db, category_id) or {
 		app.set_status(400, '')
 		return app.text('error: category does not exist')
 	}
 
 	if current_category.name != new_name {
-		check_category_article_name_collision(mut app.db, new_name) or {
+		check_category_article_name_collision(app.db, new_name) or {
 			app.set_status(400, '')
 			return app.text(err.msg())
 		}
@@ -144,11 +144,11 @@ pub fn (mut app Api) update_category(category_id int) vweb.Result {
 ['/articles'; get; options]
 pub fn (mut app Api) get_articles() vweb.Result {
 	if is_empty('category', app.query) {
-		articles := get_all_articles(mut app.db)
+		articles := get_all_articles(app.db)
 		return app.json(articles)
 	} else {
 		category_id := app.query['category'].int()
-		articles := get_all_articles_by_category(mut app.db, category_id)
+		articles := get_all_articles_by_category(app.db, category_id)
 		return app.json(articles)
 	}
 }
@@ -175,7 +175,7 @@ pub fn (mut app Api) create_article() vweb.Result {
 		new_article.show = app.form['show'] == 'true'
 	}
 
-	check_category_article_name_collision(mut app.db, new_article.name) or {
+	check_category_article_name_collision(app.db, new_article.name) or {
 		app.set_status(400, '')
 		return app.text(err.msg())
 	}
@@ -219,7 +219,7 @@ pub fn (mut app Api) create_article() vweb.Result {
 
 ['/articles/:article_id'; get; options]
 pub fn (mut app Api) get_article(article_id int) vweb.Result {
-	article := get_article(mut app.db, article_id) or { return app.not_found() }
+	article := get_article(app.db, article_id) or { return app.not_found() }
 	return app.json(article)
 }
 
@@ -239,7 +239,7 @@ pub fn (mut app Api) delete_article(article_id int) vweb.Result {
 	})
 
 	// get img of article
-	article := get_article(mut app.db, article_id) or { return app.not_found() }
+	article := get_article(app.db, article_id) or { return app.not_found() }
 	img_rows := sql app.db {
 		select from Image where id == article.thumbnail
 	} or { []Image{} }
@@ -294,7 +294,7 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 	}
 
 	// check if article exists
-	current_article := get_article(mut app.db, article_id) or {
+	current_article := get_article(app.db, article_id) or {
 		app.set_status(400, '')
 		return app.text('error: article with id "${article_id}" does not exist')
 	}
@@ -323,7 +323,7 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 	article_name := sanitize_text_field(app.form['name'])
 
 	if current_article.name != article_name {
-		check_category_article_name_collision(mut app.db, article_name) or {
+		check_category_article_name_collision(app.db, article_name) or {
 			app.set_status(400, '')
 			return app.text(err.msg())
 		}
@@ -427,7 +427,7 @@ pub fn (mut app Api) save_blocks() vweb.Result {
 
 ['/tags'; get; options]
 pub fn (mut app Api) get_tags() vweb.Result {
-	tags := get_all_tags(mut app.db)
+	tags := get_all_tags(app.db)
 	return app.json(tags)
 }
 
@@ -464,7 +464,7 @@ pub fn (mut app Api) update_tag(tag_id int) vweb.Result {
 	new_name := sanitize_text_field(app.form['name'])
 	new_color := sanitize_text_field(app.form['color'])
 
-	mut base_tag := get_tag_by_id(mut app.db, tag_id) or {
+	mut base_tag := get_tag_by_id(app.db, tag_id) or {
 		app.set_status(400, '')
 		return app.text('error: no base tag with id "${tag_id}" exists')
 	}
@@ -486,7 +486,7 @@ pub fn (mut app Api) update_tag(tag_id int) vweb.Result {
 
 ['/tags/:article'; get; options]
 pub fn (mut app Api) get_tags_from_article(article int) vweb.Result {
-	tags := get_tags_from_article(mut app.db, article)
+	tags := get_tags_from_article(app.db, article)
 	return app.json(tags)
 }
 
@@ -498,7 +498,7 @@ pub fn (mut app Api) add_tag_to_article(article int) vweb.Result {
 	}
 	tag_id := app.form['tag_id'].int()
 
-	mut tag := get_tag_by_id(mut app.db, tag_id) or {
+	mut tag := get_tag_by_id(app.db, tag_id) or {
 		app.set_status(400, '')
 		return app.text('error: tag with id "${tag_id}" does not exist')
 	}
@@ -524,7 +524,7 @@ pub fn (mut app Api) delete_tag(tag_id int) vweb.Result {
 		return app.text('error: field "tag_id" is invalid')
 	}
 
-	base_tag := get_tag_by_id(mut app.db, tag_id) or {
+	base_tag := get_tag_by_id(app.db, tag_id) or {
 		app.set_status(400, '')
 		return app.text('error: no base tag with id "${tag_id}" exists')
 	}
@@ -632,7 +632,7 @@ pub fn (mut app Api) publish_article() vweb.Result {
 	file := generate(blocks)
 
 	// set file path accordingly when article has a category or not
-	file_path, article_path := get_publish_paths(mut app.db, app.template_dir, article) or {
+	file_path, article_path := get_publish_paths(app.db, app.template_dir, article) or {
 		app.set_status(400, '')
 		return app.text('error: category of article "${article.name}" does not exist')
 	}
@@ -798,17 +798,17 @@ fn sanitize_path(path string) string {
 
 // check_category_article_name_collision returns an error if `name` collides
 // with an article or category name
-fn check_category_article_name_collision(mut db pg.DB, name string) ! {
+fn check_category_article_name_collision(db pg.DB, name string) ! {
 	converted_name := sanitize_path(name)
 
-	all_categories := get_all_categories(mut db)
+	all_categories := get_all_categories(db)
 	for category in all_categories {
 		category_name := sanitize_path(category.name)
 		if category_name == converted_name {
 			return error('A category with the name ${name} already exists!')
 		}
 	}
-	all_articles := get_all_articles(mut db)
+	all_articles := get_all_articles(db)
 	for article in all_articles {
 		article_name := sanitize_path(article.name)
 		if article_name == converted_name {
@@ -819,14 +819,14 @@ fn check_category_article_name_collision(mut db pg.DB, name string) ! {
 
 // get_publish_paths returns the file path for the html file and the according
 // url WITHOUT '/articles/'
-fn get_publish_paths(mut db pg.DB, template_dir string, article &Article) !(string, string) {
+fn get_publish_paths(db pg.DB, template_dir string, article &Article) !(string, string) {
 	mut file_path := ''
 	mut article_path := ''
 	if article.category_id == 0 {
 		file_path = os.join_path(template_dir, 'articles', '${article.name}.html')
 		article_path = article.name
 	} else {
-		category := get_category_by_id(mut db, article.category_id) or {
+		category := get_category_by_id(db, article.category_id) or {
 			return error('error: category does not exist!')
 		}
 		file_path = os.join_path(template_dir, 'articles', category.name, '${article.name}.html')

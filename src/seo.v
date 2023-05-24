@@ -90,11 +90,7 @@ pub fn (mut seo SEO) set_article(article &Article, url string) {
 	seo.set_description(article.description)
 
 	if article.thumbnail != 0 {
-		if seo.website_url.ends_with('/') {
-			seo.og.image_url = seo.website_url + article.image_src
-		} else {
-			seo.og.image_url = '${seo.website_url}/${article.image_src}'
-		}
+		seo.og.image_url = seo.website_url + article.image_src
 	}
 
 	published_time := time.parse(article.created_at) or { time.now() }

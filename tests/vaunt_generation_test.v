@@ -175,6 +175,15 @@ fn test_article_show_false() {
 	assert os.exists(file) == false
 }
 
+// test that app.Context.req.url changes
+fn test_app_req_url() {
+	file := os.join_path(output_dir, 'req_url.html')
+	assert os.exists(file)
+
+	content := os.read_file(file)!
+	assert content == '/req_url'
+}
+
 fn test_category_article_outputs() {
 	zip(correct_article_names, correct_category_names, fn (article string, category string) {
 		if category != '' {

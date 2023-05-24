@@ -414,7 +414,7 @@ Let's modify the `article_page` to enable SEO support (You can do the same for
 ['/articles/:article_name']
 pub fn (mut app App) article_page(article_name string) vweb.Result {
 	// get the article by name
-	article := vaunt.get_article_by_name(mut app.db, article_name) or { return app.not_found() }
+	article := vaunt.get_article_by_name(app.db, article_name) or { return app.not_found() }
 	// set seo
 	app.seo.set_article(article, app.req.url)
 
@@ -527,13 +527,13 @@ Create the tags in the admin panel and use the following functions in your app:
 
 ```v ignore
 // get all types of tags
-pub fn get_all_tags(mut db pg.DB) []Tag
+pub fn get_all_tags(db pg.DB) []Tag
 
 // get all tags that belong to an article
-pub fn get_tags_from_article(mut db pg.DB, _article_id int) []Tag
+pub fn get_tags_from_article(db pg.DB, _article_id int) []Tag
 
 // get a tag by id
-pub fn get_tag_by_id(mut db pg.DB, tag int) !Tag
+pub fn get_tag_by_id(db pg.DB, tag int) !Tag
 ```
 
 ### Utility

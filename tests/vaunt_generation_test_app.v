@@ -109,6 +109,11 @@ pub fn (mut app App) about() vweb.Result {
 	return app.html('About')
 }
 
+pub fn (mut app App) req_url() vweb.Result {
+	app.s_html = app.req.url
+	return app.text(app.req.url)
+}
+
 // nested index route
 ['/nested/']
 pub fn (mut app App) nested_index() vweb.Result {

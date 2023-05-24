@@ -5,6 +5,7 @@ import db.pg
 import os
 import flag
 import time
+import net.http
 
 pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T, secret string) ![]&vweb.ControllerPath {
 	init_database(db)!
@@ -89,7 +90,7 @@ pub fn start[T](mut app T, port int) ! {
 	}
 
 	if f_create_user {
-		create_super_user(mut app.db)!
+		create_super_user(app.db)!
 		return
 	}
 
@@ -160,9 +161,11 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 				i_start := time.ticks()
 
 				mut route := method.name
+				mut url := '/${route}'
 				if method.attrs.len == 1 {
 					route = method.attrs[0]
 					// add index pages for routes like "/" -> "index.html" or "/pages/" -> "pages/index.html
+					url = route
 					if route.ends_with('/') {
 						route += 'index'
 					}
@@ -177,6 +180,14 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 				// make dirs for nested routes
 				os.mkdir_all(os.dir(file_path))!
 
+				// change app.req.url according to the current route
+				app.Context = vweb.Context{
+					...app.Context
+					req: http.Request{
+						...app.Context.req
+						url: url
+					}
+				}
 				// run method, resulting html should be in `app.s_html`
 				app.$method()
 				if app.s_html.len == 0 {
@@ -256,7 +267,7 @@ fn generate_articles[T](mut app T, dist_path string) ![]string {
 		initial_seo = app.seo
 	}
 
-	mut articles := get_all_articles(mut app.db)
+	mut articles := get_all_articles(app.db)
 	for article in articles {
 		if article.show == false {
 			continue
@@ -266,10 +277,19 @@ fn generate_articles[T](mut app T, dist_path string) ![]string {
 		// generate the article html
 		file_art := generate(article.block_data)
 
-		file_path, mut article_path := get_publish_paths(mut app.db, app.template_dir,
-			article) or {
+		file_path, mut article_path := get_publish_paths(app.db, app.template_dir, article) or {
 			eprintln('warning: category of article "${article.name}" does not exist!')
 			continue
+		}
+
+		// change app.req.url according to the current route
+		current_url := '/articles/${article_path}'
+		app.Context = vweb.Context{
+			...app.Context
+			req: http.Request{
+				...app.Context.req
+				url: current_url
+			}
 		}
 
 		// create all directories for the category
@@ -289,13 +309,12 @@ fn generate_articles[T](mut app T, dist_path string) ![]string {
 
 		article_file_path := os.join_path(articles_path, article_path)
 		os.mkdir_all(os.dir(article_file_path))!
-
 		// no category
 		article_name := sanitize_path(article.name)
 		if article.category_id == 0 {
 			app.article_page(article_name)
 		} else {
-			category := get_category_by_id(mut app.db, article.category_id)!
+			category := get_category_by_id(app.db, article.category_id)!
 			category_name := sanitize_path(category.name)
 			app.category_article_page(category_name, article_name)
 		}
