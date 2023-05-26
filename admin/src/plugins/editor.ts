@@ -14,6 +14,7 @@ import DragDrop from 'editorjs-drag-drop'
 import ColorPlugin from 'editorjs-text-color-plugin'
 import CodeBlock from '@/plugins/tools/code'
 import InlineCode from '@editorjs/inline-code'
+import { BASE_URL } from './urls'
 
 // pass endpoint strings
 interface EditorUrlConfig {
@@ -68,7 +69,7 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
                             
                             // transform img url data: endpoint will only return `uploads/img/<img_path>`
                             if (resp.data.success) {
-                                resp.data.file.url = import.meta.env.VITE_BASE_URL + resp.data.file.url
+                                resp.data.file.url = BASE_URL + resp.data.file.url
                             }
                             return resp.data
                         },

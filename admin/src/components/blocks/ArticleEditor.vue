@@ -6,6 +6,7 @@ import { computed } from 'vue';
 import { ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useCategoryStore } from '@/stores/category';
+import { BASE_URL } from '@/plugins/urls';
 
 const store = useArticleStore()
 const categoryStore = useCategoryStore()
@@ -28,7 +29,7 @@ async function submitHandler(data: CreateArticle) {
         let new_article = store.get(article.value.id)!
         if (new_article.image_src) {
             // hardcoded for reactivity
-            thumbnailSource.value = import.meta.env.VITE_BASE_URL+new_article.image_src
+            thumbnailSource.value = BASE_URL+new_article.image_src
         }
 
         if (success) {
@@ -68,7 +69,7 @@ async function changeVisibility() {
     }
 }
 
-const thumbnailSource = ref(import.meta.env.VITE_BASE_URL+article.value.image_src)
+const thumbnailSource = ref(BASE_URL+article.value.image_src)
 
 const categoryOptions = computed(() => {
     let obj: any = [{

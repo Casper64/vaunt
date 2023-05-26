@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BASE_URL } from '@/plugins/urls';
 import { useArticleStore } from '@/stores/article';
 import { useCategoryStore } from '@/stores/category';
 import { ref } from 'vue';
@@ -27,7 +28,7 @@ const updated_date = computed(() => {
 })
 
 const thumbnailSource = computed(() => {
-    return import.meta.env.VITE_BASE_URL+article.value.image_src
+    return BASE_URL+article.value.image_src
 })
 
 async function deletePost() {

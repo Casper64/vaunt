@@ -33,7 +33,10 @@ fn cors(mut ctx vweb.Context) bool {
 }
 
 pub fn (mut app Api) before_request() {
-	login_required_401(mut app.Context, app.secret)
+	// fix for cors ...
+	if app.req.method != .options {
+		login_required_401(mut app.Context, app.secret)
+	}
 }
 
 // 			Categories

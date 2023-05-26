@@ -19,7 +19,7 @@ import ArticleView from '@/views/Article.vue'
 // it is not neceassary to do any fancy path transformation with static assets.
 
 const router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
+    history: createWebHistory(),
     routes: [
         {
             path: '/admin/',

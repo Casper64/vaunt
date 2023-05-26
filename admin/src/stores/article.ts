@@ -1,4 +1,5 @@
 import axios from '@/plugins/axios'
+import { BASE_API_URL } from '@/plugins/urls'
 import type {Article, CreateArticle} from 'env'
 import {defineStore} from 'pinia'
 
@@ -31,7 +32,7 @@ export const useArticleStore = defineStore('article', {
             const body = new FormData()
             body.append('name', data.name)
             body.append('description', data.description)
-            body.append('category_id', String(data.category_id) || '0')
+            body.append('category', String(data.category_id) || '0')
 
 
             // create standard title block with the text equal to the article name
@@ -107,7 +108,7 @@ export const useArticleStore = defineStore('article', {
             await new Promise(res => setTimeout(res, 300))
 
             const response = await axios.get(`/publish?article=${article_id}`)
-            const url = new URL(import.meta.env.VITE_API_BASE_URL)
+            const url = new URL(BASE_API_URL)
             
             // if we would use `router.push` vue router would handle the route
             // and we want it to redirect to the vweb application

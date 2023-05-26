@@ -1,7 +1,8 @@
 import axios from 'axios'
+import { BASE_API_URL } from './urls'
 
 const axiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
+    baseURL: BASE_API_URL,
     // fix cors when using dev server
     withCredentials: true,
     headers: {

@@ -6,6 +6,7 @@ import { ref } from 'vue';
 import type EditorJS from '@editorjs/editorjs'
 import type { EditorConfig } from '@editorjs/editorjs'
 import { useRoute } from 'vue-router';
+import { BASE_API_URL, BASE_URL } from '@/plugins/urls';
 
 const store = useBlockStore()
 const route = useRoute()
@@ -16,7 +17,7 @@ const editorChange: EditorConfig['onChange'] = async (api, event) => {
     if (event.type == 'block-removed') {
         const el = event.detail.target.holder
         const img = el.querySelector('img')
-        if (img && img.src.startsWith(import.meta.env.VITE_BASE_URL)) {
+        if (img && img.src.startsWith(BASE_URL)) {
             // its an uploaded image.
             await store.removeImage(img.src)
         }
@@ -35,7 +36,7 @@ const editorChange: EditorConfig['onChange'] = async (api, event) => {
 
 // TODO: add save callback with $mitt or something
 onMounted(() => {
-    const server = import.meta.env.VITE_API_BASE_URL
+    const server = BASE_API_URL
     editor.value = createEditor('editor', store.blocks, {
         linkEndpoint: server+'fetch-link',
         uploadFile: server+'upload-image',

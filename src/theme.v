@@ -147,7 +147,9 @@ pub mut:
 }
 
 pub fn (mut app ThemeHandler) before_request() {
-	login_required_401(mut app.Context, app.secret)
+	if app.req.method != .options {
+		login_required_401(mut app.Context, app.secret)
+	}
 }
 
 ['/'; get; options]
