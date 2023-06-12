@@ -1,11 +1,11 @@
 module vaunt
 
 import vweb
-import db.pg
 import os
 import flag
 import time
 import net.http
+import db.pg
 
 pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T, secret string) ![]&vweb.ControllerPath {
 	init_database(db)!

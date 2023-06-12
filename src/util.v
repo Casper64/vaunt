@@ -1,29 +1,70 @@
 module vaunt
 
-import db.pg
 import vweb
+import db.pg
 
 type SkipGenerationResult = vweb.Result
 
 pub struct Util {
 pub:
-	skip_generation SkipGenerationResult = SkipGenerationResult{}
+	skip_generation SkipGenerationResult
 pub mut:
+	db           pg.DB  [required]
 	theme_css    string
 	is_superuser bool
 }
 
 // get the correct url in your templates
 // // usage: `@{app.article_url(app.db, article)}`
-pub fn (u &Util) article_url(db pg.DB, article Article) string {
+pub fn (u &Util) article_url(article Article) string {
 	if article.category_id != 0 {
-		category := get_category_by_id(db, article.category_id) or { return '' }
+		category := get_category_by_id(u.db, article.category_id) or { return '' }
 		url := '/articles/${category.name}/${article.name}'
 		return sanitize_path(url)
 	}
 
 	url := '/articles/${article.name}'
 	return sanitize_path(url)
+}
+
+pub fn (u &Util) get_all_articles() []Article {
+	return get_all_articles(u.db)
+}
+
+pub fn (u &Util) get_articles_by_category(category int) []Article {
+	return get_all_articles_by_category(u.db, category)
+}
+
+pub fn (u &Util) get_article_by_name(name string) !Article {
+	return get_article_by_name(u.db, name)
+}
+
+pub fn (u &Util) get_article_by_id(id int) !Article {
+	return get_article(u.db, id)
+}
+
+pub fn (u &Util) get_all_categories() []Category {
+	return get_all_categories(u.db)
+}
+
+pub fn (u &Util) get_category_by_id(id int) !Category {
+	return get_category_by_id(u.db, id)
+}
+
+pub fn (u &Util) get_image_by_id(id int) !Image {
+	return get_image(u.db, id)
+}
+
+pub fn (u &Util) get_all_tags() []Tag {
+	return get_all_tags(u.db)
+}
+
+pub fn (u &Util) get_tags_from_article(article_id int) []Tag {
+	return get_tags_from_article(u.db, article_id)
+}
+
+pub fn (u &Util) get_tag_by_id(id int) !Tag {
+	return get_tag_by_id(u.db, id)
 }
 
 // 		Helper functions
@@ -152,4 +193,18 @@ pub fn get_tag_by_id(db pg.DB, tag int) !Tag {
 		return error('tag with id "${tag}" does not exist')
 	}
 	return tags[0]
+}
+
+// Types
+
+pub fn (a []Article) no_category() []Article {
+	return a.filter(it.category_id == 0)
+}
+
+pub fn (a []Article) visible() []Article {
+	return a.filter(it.show == true)
+}
+
+pub fn (a []Article) hidden() []Article {
+	return a.filter(it.show == false)
 }

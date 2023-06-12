@@ -75,7 +75,9 @@ fn main() {
 	vaunt.start(mut app, http_port)!
 }
 
-pub fn (mut app App) before_request() {}
+pub fn (mut app App) before_request() {
+	app.Util.db = app.db
+}
 
 ['/articles/:category_name/:article_name']
 pub fn (mut app App) category_article_page(category_name string, article_name string) vweb.Result {

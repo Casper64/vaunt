@@ -110,6 +110,11 @@ fn main() {
 	// start the Vaunt server
 	vaunt.start(mut app, 8080)!
 }
+
+pub fn (mut app App) before_request() {
+	// copy database connection to Util
+	app.Util.db = app.db
+}
 ```
 
 > **Note**
@@ -254,6 +259,9 @@ comprehensive implementation.
 ```v ignore
 // fetch the new latest theme before processing a request
 pub fn (mut app App) before_request() {
+	// copy database connection to Util
+	app.Util.db = app.db
+	
 	// only update when request is a route, assuming all resources contain a "."
 	if app.req.url.contains('.') == false {
 		app.theme_css = vaunt.update_theme(app.db, mut app.theme)
@@ -522,25 +530,76 @@ The `sitemap.xml` file is automatically generated if you provide `SEO.website_ur
 
 ## Api
 
-### Tags
-Create the tags in the admin panel and use the following functions in your app:
-
-```v ignore
-// get all types of tags
-pub fn get_all_tags(db pg.DB) []Tag
-
-// get all tags that belong to an article
-pub fn get_tags_from_article(db pg.DB, _article_id int) []Tag
-
-// get a tag by id
-pub fn get_tag_by_id(db pg.DB, tag int) !Tag
-```
-
 ### Utility
 
 Vaunt offers a few utility functions that you can use in your app for getting articles,
 categories and other stuff:
 see [util.v](src/util.v)
+
+Most of the utility functions are available on the `Util` struct, and you could use them in 
+templates, except for the functions that return a `Result` type.
+```html
+<ul>
+    @for article in app.get_all_articles()
+        <li>@article.name</li>
+    @endfor
+</ul>
+```
+
+```v
+pub fn (u &Util) get_all_articles() []Article
+
+pub fn (u &Util) get_articles_by_category(category int) []Article
+    
+pub fn (u &Util) get_article_by_name(name string) !Article
+
+pub fn (u &Util) get_article_by_id(id int) !Article
+
+pub fn (u &Util) get_all_categories() []Category
+
+pub fn (u &Util) get_category_by_id(id int) !Category
+
+pub fn (u &Util) get_image_by_id(id int) !Image
+    
+pub fn (u &Util) get_all_tags() []Tag 
+
+pub fn (u &Util) get_tags_from_article(article_id int) []Tag
+
+pub fn (u &Util) get_tag_by_id(id int) !Tag
+```
+
+
+### Articles
+The `[]Article` type has a couple of built-in functions to filter the array.
+
+```v
+pub fn (a []Article) no_category() []Article {
+	return a.filter(it.category_id == 0)
+}
+
+pub fn (a []Article) visible() []Article {
+	return a.filter(it.show == true)
+}
+
+pub fn (a []Article) hidden() []Article {
+	return a.filter(it.show == false)
+}
+```
+
+You can use these functions in your templates.
+
+**Example:**
+```html
+<!-- List all visible articles. See admin panel -->
+<ul>
+    @for article in app.get_all_articles().visible()
+        <li>@article.name</li>
+    @endfor
+</ul>
+```
+
+### Tags
+Create and edit tags in the admin panel. See the [Utility section](#utility) for helper functions.
 
 
 ### Database Models
@@ -575,6 +634,15 @@ pub mut:
 	name       string [nonull]
 	src        string [nonull]
 	article_id int    [nonull]
+}
+
+[table: 'tags']
+pub struct Tag {
+pub mut:
+	id         int    [primary; sql: serial]
+	article_id int
+	name       string [nonull]
+	color      string [nonull]
 }
 ```
 
