@@ -18,6 +18,7 @@ const article = computed(() => store.get(route.params.id)!)
 
 const showAddTag = ref(false);
 const showCreateTag = ref(false);
+const tagError = ref('');
 
 const newColor = ref('#000000');
 const currentTagname = ref('');
@@ -69,17 +70,24 @@ function updateTags(data: any) {
 }
 
 async function createTag(data: any) {
+    tagError.value = '';
+    
     if (data['tag_name'] == '') {
         showCreateTag.value = false;
         return
     }
 
-    await tagStore.create(data['tag_name'], newColor.value, article.value.id)
+    try {
+        await tagStore.create(data['tag_name'], newColor.value, article.value.id)
+        newColor.value = '#000000'
+        currentTagname.value = ''
+        showCreateTag.value = false
+    } catch(error) {
+        tagError.value = error.response.data
+        return
+    }
     // currentTags.value.push(tagStore.tags[tagStore.tags.length - 1])
-
-    newColor.value = '#000000'
-    currentTagname.value = ''
-    showCreateTag.value = false
+   
 }
 
 </script>
@@ -110,7 +118,8 @@ async function createTag(data: any) {
                 <FormKit type="form" @submit="createTag" submit-label="Create tag">
                     <FormKit type="text" label="Tag name" name="tag_name" v-model="currentTagname"/>
                     <ColorPicker color_name="color" v-model="newColor" label=""/>
-            </FormKit>
+                </FormKit>
+                <p class="error" v-if="tagError">{{ tagError }}</p>
             </div>
             <div class="current-tags">
                 <TagComponent v-for="tag in selectedTags" :tag="tag"/>
@@ -178,7 +187,7 @@ async function createTag(data: any) {
 
 .new-tag {
     display: grid;
-    grid-template-columns: 1fr max-content;
+    grid-template-columns: 1fr;
 
     // bu
 }

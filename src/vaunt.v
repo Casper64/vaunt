@@ -220,6 +220,12 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 		urls << generate_articles(mut app, dist_path) or { panic(err) }
 	}
 
+	// tags
+	if 'tag_page' in routes {
+		println('[Vaunt] Generating tag pages...')
+		urls << generate_tags(mut app, dist_path) or { panic(err) }
+	}
+
 	// sitemap.xml
 	$if T is SEOInterface {
 		println('[Vaunt] Generating sitemap.xml...')
@@ -251,7 +257,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 
 	end := time.ticks()
 
-	println('[Vaunt] Done! Outputted your website to "${output_dir} in ${end - start}ms')
+	println('[Vaunt] Done! Outputted your website to "${output_dir}" in ${end - start}ms')
 }
 
 fn generate_articles[T](mut app T, dist_path string) ![]string {
@@ -320,7 +326,8 @@ fn generate_articles[T](mut app T, dist_path string) ![]string {
 		}
 
 		if app.s_html.len == 0 {
-			eprintln('warning: article "${article.name}" produced no html! Did you forget to set `app.s_html`?')
+			eprintln('warning: article "${article.name}" produced no html! Did you forget to set `app.s_html`? Skipping output')
+			continue
 		}
 
 		mut f := os.create(article_file_path)!
@@ -335,6 +342,62 @@ fn generate_articles[T](mut app T, dist_path string) ![]string {
 
 		a_end := time.ticks()
 		println('[Vaunt] Generated article "${article.name}" in ${a_end - a_start}ms')
+	}
+
+	return urls
+}
+
+fn generate_tags[T](mut app T, dist_path string) ![]string {
+	tags_path := os.join_path(dist_path, 'tags')
+	os.mkdir(tags_path)!
+
+	// all urls for the articles
+	mut urls := []string{}
+
+	// get initial SEO
+	mut initial_seo := SEO{}
+	$if T is SEOInterface {
+		initial_seo = app.seo
+	}
+
+	tags := get_all_tags(app.db)
+	for tag in tags {
+		t_start := time.ticks()
+
+		mut tag_path := sanitize_path(tag.name)
+		tag_file_path := os.join_path(tags_path, '${tag_path}.html')
+		// change app.req.url according to the current route
+		current_url := '/tags/${tag_path}'
+		app.Context = vweb.Context{
+			...app.Context
+			req: http.Request{
+				...app.Context.req
+				url: current_url
+			}
+		}
+
+		// get html
+		tag_path += '.html'
+		urls << 'tags/${tag_path}'
+		app.tag_page(tag.name)
+
+		if app.s_html.len == 0 {
+			eprintln('warning: tag "${tag.name}" produced no html! Did you forget to set `app.s_html`? Skipping output')
+			continue
+		}
+
+		mut f := os.create(tag_file_path)!
+		f.write(app.s_html.bytes())!
+		f.close()
+
+		// reset app
+		app.s_html = ''
+		$if T is SEOInterface {
+			app.seo = initial_seo
+		}
+
+		t_end := time.ticks()
+		println('[Vaunt] Generated tag page "${tag.name}" in ${t_end - t_start}ms')
 	}
 
 	return urls

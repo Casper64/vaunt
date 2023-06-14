@@ -92,6 +92,12 @@ pub fn (mut app App) article_page(article_name string) vweb.Result {
 	return app.html(article_name)
 }
 
+['/tags/:tag_name']
+pub fn (mut app App) tag_page(tag_name string) vweb.Result {
+	app.s_html = tag_name
+	return app.html(tag_name)
+}
+
 // index route
 pub fn (mut app App) index() vweb.Result {
 	app.s_html = 'index'

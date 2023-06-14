@@ -41,6 +41,7 @@ pub mut:
 
 // should use many to many relation, but that's not yet possible with orm
 // so there will be duplicates in the database :/
+// also the reason why `name` can't have the `unique` attribute
 [table: 'tags']
 pub struct Tag {
 pub mut:

@@ -441,11 +441,15 @@ pub fn (mut app Api) create_tag(name string, color string) vweb.Result {
 		return app.text('error: fields "name" and "color" are required')
 	}
 
+	check_tag_name_collision(app.db, name) or {
+		app.set_status(400, '')
+		app.text(err.msg())
+	}
+
 	mut tag := Tag{
-		name: sanitize_text_field(name)
+		name: sanitize_path(name)
 		color: sanitize_text_field(color)
 	}
-	println('new tag: ${tag}')
 
 	sql app.db {
 		insert tag into Tag
@@ -464,8 +468,13 @@ pub fn (mut app Api) update_tag(tag_id int) vweb.Result {
 		app.set_status(400, '')
 		return app.text('error: fields "tag_id", "name" and "color" are required')
 	}
-	new_name := sanitize_text_field(app.form['name'])
+	new_name := sanitize_path(app.form['name'])
 	new_color := sanitize_text_field(app.form['color'])
+
+	check_tag_name_collision_exclusive(app.db, new_name, tag_id) or {
+		app.set_status(400, '')
+		app.text(err.msg())
+	}
 
 	mut base_tag := get_tag_by_id(app.db, tag_id) or {
 		app.set_status(400, '')
@@ -808,14 +817,38 @@ fn check_category_article_name_collision(db pg.DB, name string) ! {
 	for category in all_categories {
 		category_name := sanitize_path(category.name)
 		if category_name == converted_name {
-			return error('A category with the name ${name} already exists!')
+			return error('A category with the name "${name}" already exists!')
 		}
 	}
 	all_articles := get_all_articles(db)
 	for article in all_articles {
 		article_name := sanitize_path(article.name)
 		if article_name == converted_name {
-			return error('An article with the name ${name} already exists!')
+			return error('An article with the name "${name}" already exists!')
+		}
+	}
+}
+
+fn check_tag_name_collision(db pg.DB, name string) ! {
+	converted_name := sanitize_path(name)
+
+	all_tags := get_all_tags(db)
+	for tag in all_tags {
+		if tag.name == converted_name {
+			return error('A tag with the name "${name}" already exist!')
+		}
+	}
+}
+
+fn check_tag_name_collision_exclusive(db pg.DB, new_name string, old_id int) ! {
+	converted_new_name := sanitize_path(new_name)
+
+	all_tags := get_all_tags(db)
+	for tag in all_tags {
+		if tag.id == old_id {
+			continue
+		} else if tag.name == converted_new_name {
+			return error('A tag with the name "${new_name}" already exist!')
 		}
 	}
 }

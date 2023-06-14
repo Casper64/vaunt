@@ -63,6 +63,10 @@ pub fn (u &Util) get_tags_from_article(article_id int) []Tag {
 	return get_tags_from_article(u.db, article_id)
 }
 
+pub fn (u &Util) get_tag(name string) !Tag {
+	return get_tag(u.db, name)
+}
+
 pub fn (u &Util) get_tag_by_id(id int) !Tag {
 	return get_tag_by_id(u.db, id)
 }
@@ -182,6 +186,18 @@ pub fn get_tags_from_article(db pg.DB, _article_id int) []Tag {
 		select from Tag where article_id == _article_id
 	} or { []Tag{} }
 	return tags
+}
+
+// get a tag by name
+pub fn get_tag(db pg.DB, name string) !Tag {
+	converted_name := sanitize_path(name)
+	tags := sql db {
+		select from Tag where name == converted_name && article_id == 0
+	}!
+	if tags.len == 0 {
+		return error('tag with name "${name}" does not exist')
+	}
+	return tags[0]
 }
 
 // get a tag by id

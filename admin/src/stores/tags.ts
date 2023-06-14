@@ -56,25 +56,18 @@ export const useTagStore = defineStore('tag', {
             // await axios.post(`/tags/${article_id}`, JSON.stringify(this.currentTags))
         },
         async create(name: string, color: string, article: number = 0) {
-            // check if is new tag
-            const isBaseTag = this.tags.every(t => t.name != name)
-            console.log('is base tag:', isBaseTag)
-
             const body = new FormData()
             body.append('name', name)
             body.append('color', color)
 
-            if (isBaseTag) {
-                // first create the tag
-                const response = await axios.post('/tags', body)
-                let baseTag = response.data
-                this.tags.push(baseTag)
+            // first create the tag
+            const response = await axios.post('/tags', body)
+            let baseTag = response.data
+            this.tags.push(baseTag)
 
-                if (article) {
-                    await this.addToArticle(article, baseTag.id)
-                }
+            if (article) {
+                await this.addToArticle(article, baseTag.id)
             }
-            // else error?
         },
         async addToArticle(article: number, tag: number) {
             const body = new FormData()

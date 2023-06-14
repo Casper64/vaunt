@@ -492,6 +492,10 @@ fn test_delete_image() {
 // TODO: Categories
 // 		Categories
 // ======================
+//
+// TODO: Tags
+// 		Tags
+// ===============
 
 fn testsuite_end() {
 	// This test is guaranteed to be called last.

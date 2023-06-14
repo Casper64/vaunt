@@ -332,7 +332,7 @@ A method with name `article_page` and dynamic route `"/articles/:article_name"`.
 If you press the `publish` button in the admin panel the html will be generated
 and outputted to  `"[template_dir]/articles/[article_name].html"`.
 
-**Example**
+**Example:**
 ```v ignore
 ['/articles/:article_name']
 pub fn (mut app App) article_page(article_name string) vweb.Result {
@@ -347,6 +347,26 @@ pub fn (mut app App) article_page(article_name string) vweb.Result {
 	// save html in `app.s_html` first before returning it
 	app.s_html = content
 	return app.html(content)
+}
+```
+
+### Tags
+You can generate a html page for every tag you create by adding a`tag_page` method
+with dynamic route `"/tags/:tag_name"`. This method is optional.
+
+The html pages are generated in `"[template_dir]/tags/[tag_name].html"`.
+
+**Example:**
+```v ignore
+['/tags/:tag_name']
+pub fn (mut app App) tag_page(tag_name string) vweb.Result {
+	tag := app.get_tag(tag_name) or { return app.not_found() }
+
+	content := 'tag: ${tag_name}'
+
+	// save html in `app.s_html` first before returning it
+	app.s_html = content
+	return app.html(app.s_html)
 }
 ```
 
@@ -565,6 +585,8 @@ pub fn (u &Util) get_all_tags() []Tag
 
 pub fn (u &Util) get_tags_from_article(article_id int) []Tag
 
+pub fn (u &Util) get_tag(name string) !Tag
+
 pub fn (u &Util) get_tag_by_id(id int) !Tag
 ```
 
@@ -759,6 +781,7 @@ pub mut:
 ```v oksyntax
 // should use many to many relation, but that's not yet possible with orm
 // so there will be duplicates in the database :/
+// also the reason why `name` can't have the `unique` attribute
 [table: 'tags']
 pub struct Tag {
 pub mut:
@@ -776,5 +799,5 @@ The frontend editor is made with [Vue](https://vuejs.org/) and
 In the future custom blocks will be able to be registerd in Vaunt by passing a function
 that takes a EditorJs block as input and outputs html.
 
-The goal of this project is to provide a backend cms with developers can extend to
+The goal of this project is to provide a backend cms which developers can extend to
 create their own themes and extensions.

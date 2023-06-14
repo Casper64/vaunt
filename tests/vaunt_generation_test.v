@@ -27,6 +27,9 @@ const (
 	correct_category_names = ['web', 'category-space', 'categorycaps', '']
 	no_show_article        = 'show'
 
+	tag_names              = ['first s', 'SeCond']
+	correct_tag_names      = ['first-s', 'second']
+
 	seo_url                = 'https://example.com'
 )
 
@@ -80,7 +83,7 @@ fn test_vaunt_runs_in_background() {
 fn test_generate_succeeds() {
 	result := os.execute('${os.quoted_path(vexe)} run tests/vaunt_generation_test_app.v  ${sport2} ${exit_after_time} ${db_user} ${db_password} ${db_name} --generate --out ${output_dir}')
 	assert result.exit_code == 0
-
+	dump(result.output)
 	// test custom output dir
 	assert result.output.contains('"${output_dir}"') == true
 	assert os.exists(output_dir) == true
@@ -212,6 +215,22 @@ fn test_category_article_outputs() {
 	})
 }
 
+fn test_tag_outputs() {
+	dir := os.join_path(output_dir, 'tags')
+	assert os.exists(dir)
+
+	for tag in correct_tag_names {
+		file := os.join_path(dir, '${tag}.html')
+		assert os.exists(file) == true
+
+		contents := os.read_file(file) or {
+			eprintln('file ${file} does not exists!')
+			''
+		}
+		assert contents == tag
+	}
+}
+
 fn test_sitemap() {
 	sitemap_file := os.join_path(output_dir, 'sitemap.xml')
 	assert os.exists(sitemap_file) == true
@@ -274,6 +293,10 @@ fn insert_data() {
 
 	// create article where show is false
 	create_article(no_show_article, 'test', '{}', 0, false) or {}
+
+	for tag in tag_names {
+		t := create_tag(tag) or { vaunt.Tag{} }
+	}
 }
 
 fn zip[T, U](a []T, b []U, iterator fn (T, U)) {
@@ -302,6 +325,15 @@ fn create_article(name string, description string, block_data string, category i
 	}
 	mut x := do_post_form('http://${localserver}/api/articles', form_data)!
 	return json.decode(vaunt.Article, x.body)!
+}
+
+fn create_tag(name string) !vaunt.Tag {
+	form_data := {
+		'name':  name
+		'color': '#000000'
+	}
+	mut x := do_post_form('http://${localserver}/api/tags', form_data)!
+	return json.decode(vaunt.Tag, x.body)!
 }
 
 fn to_url(url string) string {

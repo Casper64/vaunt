@@ -105,6 +105,12 @@ pub fn (mut app App) article_page(article_name string) vweb.Result {
 	return app.html(content)
 }
 
+['/tags/:tag_name']
+pub fn (mut app App) tag_page(tag_name string) vweb.Result {
+	app.s_html = tag_name
+	return app.html(tag_name)
+}
+
 pub fn (mut app App) not_found() vweb.Result {
 	app.set_status(404, 'Not Found')
 	return app.html('<h1>"${app.req.url}" does not exist')
