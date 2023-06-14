@@ -443,7 +443,7 @@ pub fn (mut app Api) create_tag(name string, color string) vweb.Result {
 
 	check_tag_name_collision(app.db, name) or {
 		app.set_status(400, '')
-		app.text(err.msg())
+		return app.text(err.msg())
 	}
 
 	mut tag := Tag{
@@ -463,7 +463,8 @@ pub fn (mut app Api) create_tag(name string, color string) vweb.Result {
 }
 
 ['/tags'; put]
-pub fn (mut app Api) update_tag(tag_id int) vweb.Result {
+pub fn (mut app Api) update_tag() vweb.Result {
+	tag_id := app.form['tag_id'].int()
 	if tag_id == 0 || is_empty('name', app.form) || is_empty('color', app.form) {
 		app.set_status(400, '')
 		return app.text('error: fields "tag_id", "name" and "color" are required')
@@ -473,7 +474,7 @@ pub fn (mut app Api) update_tag(tag_id int) vweb.Result {
 
 	check_tag_name_collision_exclusive(app.db, new_name, tag_id) or {
 		app.set_status(400, '')
-		app.text(err.msg())
+		return app.text(err.msg())
 	}
 
 	mut base_tag := get_tag_by_id(app.db, tag_id) or {
@@ -487,18 +488,23 @@ pub fn (mut app Api) update_tag(tag_id int) vweb.Result {
 	}
 
 	sql app.db {
-		update Tag set name = new_name, color = new_color where name == new_name
+		update Tag set name = new_name, color = new_color where name == base_tag.name
 	} or {
 		app.set_status(500, '')
 		return app.text('error: could not update tag')
 	}
 
+	base_tag.name = new_name
+	base_tag.color = new_color
 	return app.json(base_tag)
 }
 
 ['/tags/:article'; get; options]
 pub fn (mut app Api) get_tags_from_article(article int) vweb.Result {
 	tags := get_tags_from_article(app.db, article)
+	if tags.len == 0 {
+		return app.not_found()
+	}
 	return app.json(tags)
 }
 

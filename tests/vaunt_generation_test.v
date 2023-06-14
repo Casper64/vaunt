@@ -51,6 +51,7 @@ fn test_setup_database() {
 	db.drop('categories') or {}
 	db.drop('articles') or {}
 	db.drop('images') or {}
+	db.drop('tags') or {}
 }
 
 fn test_vaunt_app_can_be_compiled() {

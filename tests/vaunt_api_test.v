@@ -35,10 +35,11 @@ fn test_setup_database() {
 	db.drop('articles') or {}
 	db.drop('images') or {}
 	db.drop('users') or {}
+	db.drop('tags') or {}
 }
 
 fn test_vaunt_app_can_be_compiled() {
-	did_server_compile := os.system('${os.quoted_path(vexe)} -o ${os.quoted_path(serverexe)} tests/vaunt_test_app.v')
+	did_server_compile := os.system('${os.quoted_path(vexe)} -o ${os.quoted_path(serverexe)} tests/vaunt_api_test_app.v')
 	assert did_server_compile == 0
 	assert os.exists(serverexe)
 }
@@ -489,13 +490,224 @@ fn test_delete_image() {
 	}
 }
 
-// TODO: Categories
 // 		Categories
 // ======================
-//
-// TODO: Tags
+
+fn test_create_category() {
+	category_name := 'loWer'
+	correct_category_name := 'Lower'
+
+	mut form := map[string]string{}
+
+	mut x := do_post_form('http://${localserver}/api/categories', form)!
+	assert x.status() == .bad_request
+
+	form['name'] = category_name
+	x = do_post_form('http://${localserver}/api/categories', form)!
+	assert x.status() == .ok
+
+	mut c := json.decode(vaunt.Category, x.body)!
+	assert c.name == correct_category_name
+}
+
+fn test_duplicate_category_name() {
+	mut x := do_post_form('http://${localserver}/api/categories', {
+		'name': 'lower'
+	})!
+
+	assert x.status() == .bad_request
+}
+
+fn test_get_categories() {
+	mut x := do_get('http://${localserver}/api/categories')!
+	assert x.status() == .ok
+
+	categories := json.decode([]vaunt.Category, x.body)!
+	assert categories.len == 1
+}
+
+fn test_update_category() {
+	mut form := map[string]string{}
+
+	mut x := do_put_form('http://${localserver}/api/categories/1', form)!
+	assert x.status() == .bad_request
+
+	form['name'] = 'Other'
+
+	x = do_put_form('http://${localserver}/api/categories/10', form)!
+	assert x.status() == .bad_request
+
+	x = do_put_form('http://${localserver}/api/categories/1', form)!
+	assert x.status() == .ok
+
+	x = do_get('http://${localserver}/api/categories')!
+	categories := json.decode([]vaunt.Category, x.body)!
+	assert categories.len == 1
+	assert categories[0].name == form['name']
+}
+
+fn test_update_duplicate_category_name() {
+	mut x := do_post_form('http://${localserver}/api/categories', {
+		'name': 'Other'
+	})!
+	assert x.status() == .bad_request
+}
+
+fn test_delete_category() {
+	mut x := do_delete('http://${localserver}/api/categories/1')!
+	assert x.status() == .ok
+
+	x = do_get('http://${localserver}/api/categories')!
+	categories := json.decode([]vaunt.Category, x.body)!
+	assert categories.len == 0
+}
+
 // 		Tags
 // ===============
+
+fn test_create_tag() {
+	mut form := map[string]string{}
+
+	mut x := do_post_form('http://${localserver}/api/tags', form)!
+	assert x.status() == .bad_request
+
+	form['name'] = 'WiTh SpAcE'
+	x = do_post_form('http://${localserver}/api/tags', form)!
+	assert x.status() == .bad_request
+
+	form['color'] = '#000000'
+	x = do_post_form('http://${localserver}/api/tags', form)!
+	assert x.status() == .ok
+	tag := json.decode(vaunt.Tag, x.body)!
+
+	assert tag.name == 'with-space'
+}
+
+fn test_create_duplicate_name_tag() {
+	mut x := do_post_form('http://${localserver}/api/tags', {
+		'name':  'with Space'
+		'color': '#000000'
+	})!
+	assert x.status() == .bad_request
+}
+
+fn test_get_tags() {
+	mut x := do_get('http://${localserver}/api/tags')!
+	assert x.status() == .ok
+	tags := json.decode([]vaunt.Tag, x.body)!
+	assert tags.len == 1
+}
+
+fn test_add_tag_to_article() {
+	article := create_article('with tag', 'tagz', '{}')!
+	eprintln("note to self: check article id's again!")
+	assert article.id == 8
+
+	mut form := map[string]string{}
+
+	mut x := do_post_form('http://${localserver}/api/tags/8', form)!
+	assert x.status() == .bad_request
+
+	// tag does not exist
+	form['tag_id'] = '2'
+	x = do_post_form('http://${localserver}/api/tags/8', form)!
+	assert x.status() == .bad_request
+
+	form['tag_id'] = '1'
+	x = do_post_form('http://${localserver}/api/tags/8', form)!
+	assert x.status() == .ok
+
+	tag := json.decode(vaunt.Tag, x.body)!
+	assert tag.id == 2
+}
+
+fn test_get_tags_from_article() {
+	mut x := do_get('http://${localserver}/api/tags/3')!
+	assert x.status() == .not_found
+
+	x = do_get('http://${localserver}/api/tags/8')!
+	assert x.status() == .ok
+
+	tags := json.decode([]vaunt.Tag, x.body)!
+	assert tags.len == 1
+	assert tags[0].id == 2
+}
+
+fn test_update_tag() {
+	mut x := do_put_form('http://${localserver}/api/tags', {
+		'tag_id': '1'
+		'name':   'other'
+		'color':  '#000000'
+	})!
+	assert x.status() == .ok
+	tag := json.decode(vaunt.Tag, x.body)!
+	assert tag.name == 'other'
+
+	// tag should be changed for all articles as well
+	x = do_get('http://${localserver}/api/tags/8')!
+	assert x.status() == .ok
+	tags := json.decode([]vaunt.Tag, x.body)!
+	assert tags.len == 1
+	assert tags[0].name == 'other'
+}
+
+fn test_update_duplicate_tag_name() {
+	mut x := do_post_form('http://${localserver}/api/tags', {
+		'name':  'test'
+		'color': '#000000'
+	})!
+	assert x.status() == .ok
+
+	x = do_put_form('http://${localserver}/api/tags', {
+		'tag_id': '3'
+		'name':   'Other'
+		'color':  '#000000'
+	})!
+	assert x.status() == .bad_request
+
+	x = do_put_form('http://${localserver}/api/tags', {
+		'tag_id': '3'
+		'name':   'test'
+		'color':  '#000001'
+	})!
+	assert x.status() == .ok
+}
+
+fn test_remove_tag_from_article() {
+	mut x := do_delete('http://${localserver}/api/tags/2')!
+	assert x.status() == .ok
+
+	x = do_get('http://${localserver}/api/tags/8')!
+	assert x.status() == .not_found
+}
+
+fn test_delete_tag() {
+	// add tag back to article
+	mut x := do_post_form('http://${localserver}/api/tags/8', {
+		'tag_id': '3'
+	})!
+	assert x.status() == .ok
+
+	x = do_get('http://${localserver}/api/tags/8')!
+	assert x.status() == .ok
+
+	tags := json.decode([]vaunt.Tag, x.body)!
+	assert tags.len == 1
+	assert tags[0].id == 4
+
+	// tag is added to article so we can delete both
+	x = do_delete('http://${localserver}/api/tags/3')!
+	assert x.status() == .ok
+	// tag is deleted from article
+	x = do_get('http://${localserver}/api/tags/8')!
+	assert x.status() == .not_found
+
+	x = do_get('http://${localserver}/api/tags')!
+	assert x.status() == .ok
+	del_tags := json.decode([]vaunt.Tag, x.body)!
+	// only the duplicate tag 'other' should be present
+	assert del_tags.len == 1
+}
 
 fn testsuite_end() {
 	// This test is guaranteed to be called last.
@@ -554,6 +766,18 @@ fn do_post(url string, data string) !http.Response {
 fn do_delete(url string) !http.Response {
 	req := http.Request{
 		method: .delete
+		url: url
+		cookies: {
+			'vaunt_token': jwt_token
+		}
+	}
+	return req.do()!
+}
+
+fn do_put_form(url string, form map[string]string) !http.Response {
+	req := http.Request{
+		method: .put
+		data: http.url_encode_form_data(form)
 		url: url
 		cookies: {
 			'vaunt_token': jwt_token
