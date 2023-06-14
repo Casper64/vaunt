@@ -35,6 +35,10 @@ pub fn (u &Util) get_articles_by_category(category int) []Article {
 	return get_all_articles_by_category(u.db, category)
 }
 
+pub fn (u &Util) get_articles_by_tag(name string) []Article {
+	return get_articles_by_tag(u.db, name)
+}
+
 pub fn (u &Util) get_article_by_name(name string) !Article {
 	return get_article_by_name(u.db, name)
 }
@@ -122,6 +126,19 @@ pub fn get_all_articles_by_category(db pg.DB, category int) []Article {
 			article.image_src = img.src
 		}
 	}
+	return articles
+}
+
+// get all articles that have the tag `tag_name`
+pub fn get_articles_by_tag(db pg.DB, _tag_name string) []Article {
+	tag_name := sanitize_path(_tag_name)
+
+	mut articles := get_all_articles(db)
+	articles = articles.filter(fn [db, tag_name] (article Article) bool {
+		tags := get_tags_from_article(db, article.id)
+		return tags.filter(it.name == tag_name).len != 0
+	})
+
 	return articles
 }
 

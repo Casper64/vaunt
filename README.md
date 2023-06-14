@@ -570,6 +570,8 @@ templates, except for the functions that return a `Result` type.
 pub fn (u &Util) get_all_articles() []Article
 
 pub fn (u &Util) get_articles_by_category(category int) []Article
+
+pub fn (u &Util) get_articles_by_tag(name string) []Article
     
 pub fn (u &Util) get_article_by_name(name string) !Article
 
