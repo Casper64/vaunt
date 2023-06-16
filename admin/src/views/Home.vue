@@ -43,6 +43,9 @@ function getArticleByCategory(id: number) {
         <router-link to="/admin/create-category" class="add-category-btn">
             <FormKit type="button" prefix-icon="add">Add Category</FormKit>
         </router-link>
+        <router-link to="/admin/create-markdown">
+            <FormKit type="button" prefix-icon="add">Import Markdown</FormKit>
+        </router-link>
     </div>
     <div class="categories-container">
         <template v-for="category in categoryStore.categories">

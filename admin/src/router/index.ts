@@ -13,6 +13,7 @@ import { useCategoryStore } from '@/stores/category'
 import { useTagStore } from '@/stores/tags'
 import SettingsView from '@/views/Settings.vue'
 import ArticleView from '@/views/Article.vue'
+import CreateMarkdownView from '@/views/CreateMarkdown.vue'
 
 // In the built app all routes will be after the route `/admin` so we prepend
 // it now in the router. This avoids many headaches in production and this way
@@ -36,6 +37,15 @@ const router = createRouter({
             path: '/admin/create',
             name: 'create',
             component: CreateArticleView,
+            async beforeEnter(to, from, next) {
+                const categoryStore = useCategoryStore()
+                await categoryStore.fetchData()
+                next()
+            }
+        }, {
+            path: '/admin/create-markdown',
+            name: 'create',
+            component: CreateMarkdownView,
             async beforeEnter(to, from, next) {
                 const categoryStore = useCategoryStore()
                 await categoryStore.fetchData()

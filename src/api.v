@@ -36,6 +36,9 @@ pub fn (mut app Api) before_request() {
 	// fix for cors ...
 	if app.req.method != .options {
 		login_required_401(mut app.Context, app.secret)
+	} else {
+		cors(mut app.Context)
+		app.ok('')
 	}
 }
 
@@ -218,6 +221,21 @@ pub fn (mut app Api) create_article() vweb.Result {
 	}
 
 	return app.json(article)
+}
+
+['/articles/md'; post]
+pub fn (mut app Api) create_article_from_markdown() vweb.Result {
+	mut fdata := app.files['markdown']
+	if fdata.len != 1 {
+		app.set_status(400, '')
+		return app.text('error: must provide one file: "markdown"')
+	}
+	md := fdata[0].data
+
+	blocks := get_blocks_from_markdown(md)
+	app.form['block_data'] = json.encode(blocks)
+
+	return app.create_article()
 }
 
 ['/articles/:article_id'; get; options]

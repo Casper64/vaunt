@@ -51,6 +51,34 @@ export const useArticleStore = defineStore('article', {
 
             return response.data
         },
+        async createWithMarkdown(data: any) {
+            for (const key in data) {
+                if (typeof data[key] == 'string') {
+                    data[key] = data[key].replace(/\r/g, "");
+                }
+            }
+
+            const body = new FormData()
+            body.append('name', data.name)
+            body.append('description', data.description)
+            body.append('category', String(data.category_id) || '0')
+
+            // add file data
+            data.thumbnail.forEach((fileItem: any) => {
+                body.append('thumbnail-name', fileItem.name)
+                body.append('thumbnail', fileItem.file)
+            })
+
+            data.markdown.forEach((fileItem: any) => {
+                // body.append('markdown-name', fileItem.name)
+                body.append('markdown', fileItem.file)
+            })
+
+            const response = await axios.post('/articles/md', body)
+            this.articles.push(response.data)
+
+            return response.data
+        },
         // delete an article with `id`
         async remove(id : number) {
             await axios.delete(`/articles/${id}`)

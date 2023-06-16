@@ -3,5 +3,5 @@ Module {
 	description: 'A V library for generating static websites'
 	version: '0.2'
 	license: 'GPL-3.0'
-	dependencies: []
+	dependencies: ['markdown']
 }

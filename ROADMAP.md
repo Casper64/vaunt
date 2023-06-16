@@ -13,13 +13,13 @@
 ## 0.3
 - [X] Article "tags"
 - [X] Add authentication system, so it's possible to have the server and editor online.
-- [ ] Support for all databases in the `db` module
+- [X] Import markdown feature
 - [ ] Add layout blocks
 - [ ] Reference article block
-- [ ] Import markdown feature
 - [ ] Documentation theme
 - [ ] Vaunt docs website
-- [ ] Documentation website generator like `v doc`. Content will be editable in the frontend editor. 
 
 ## Future 
 - [ ] Allow custom blocks
+- [ ] Support for all databases in the `db` module
+- [ ] Documentation website generator like `v doc`. Content will be editable in the frontend editor. 
