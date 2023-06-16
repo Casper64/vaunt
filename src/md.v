@@ -3,9 +3,15 @@ module vaunt
 import json
 import markdown
 import net.html
+import encoding.html as en_html
 
+// get_blocks_from_markdown converts the markdown string `md` to Vaunt blocks.
+// These blocks can be added to an article if they are JSON encoded.
 pub fn get_blocks_from_markdown(md string) []Block {
-	md_html := '<html><body>${markdown.to_html(md)}</body></html>'
+	// sanitize md?
+	sanitized := md.replace('javascript:', '').replace('vbscript:', '').replace('file:',
+		'').replace('<script', '&lt;script')
+	md_html := '<html><body>${markdown.to_html(sanitized)}</body></html>'
 	doc := html.parse(md_html)
 	elements := doc.get_tag('body')[0].children.clone()
 	blocks := generate_blocks(elements)
