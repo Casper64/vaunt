@@ -3,12 +3,12 @@ module vaunt
 import json
 import markdown
 import net.html
-import encoding.html as en_html
 
 // get_blocks_from_markdown converts the markdown string `md` to Vaunt blocks.
 // These blocks can be added to an article if they are JSON encoded.
 pub fn get_blocks_from_markdown(md string) []Block {
-	// sanitize md?
+	// since the markdown is user uploaded the user is responsible for any html that is still left.
+	// only removing the script tags and some basic tags is enough for Vaunt's purpose
 	sanitized := md.replace('javascript:', '').replace('vbscript:', '').replace('file:',
 		'').replace('<script', '&lt;script')
 	md_html := '<html><body>${markdown.to_html(sanitized)}</body></html>'

@@ -7,7 +7,6 @@ import { useRoute } from 'vue-router';
 import { computed } from 'vue';
 import { useArticleStore } from '@/stores/article';
 import { ref } from 'vue';
-import type { Tag } from 'env'
 import { useTagStore } from '@/stores/tags';
 
 const store = useArticleStore()
@@ -23,9 +22,11 @@ const tagError = ref('');
 const newColor = ref('#000000');
 const currentTagname = ref('');
 
-const currentTags = computed(() => {
-    return tagStore.tags.filter(x => x.article_id == article.value.id)
-})
+const currentTags = ref(tagStore.tags.filter(x => x.article_id == article.value.id))
+
+function updateCurrentTags() {
+    currentTags.value = tagStore.tags.filter(x => x.article_id == article.value.id)
+}
 
 const baseTagsNames = computed(() => {
     return tagStore.baseTags().map(t => t.name)
@@ -40,15 +41,11 @@ const selectedTagsNames = computed(() => {
     return intersect
 })
 
-// AAAAAAAAA it won't work
-// Why isn't it possible why??
-// TODO: update store.tags in one time in `fetchData`
 const selectedTags = computed(() => {
-    let tags = selectedTagsNames.value
-    return tags.map(x => tagStore.getBaseTag(x)!)
+    return selectedTagsNames.value.map(x => tagStore.getBaseTag(x)!)
 })
 
-function updateTags(data: any) {
+async function updateTags(data: any) {
     let A: string[] = data['tags']
     let B = selectedTagsNames.value
 
@@ -57,16 +54,23 @@ function updateTags(data: any) {
     // B - A
     const removedTags = B.filter(x => !A.includes(x))
 
-    console.log(addedTags, removedTags)
+    const add = async () => {
+        for (const name of addedTags) {
+            let tag = tagStore.getBaseTag(name)!
+            await tagStore.addToArticle(article.value.id, tag.id)
+        }
+    }
+    await add()
 
-    addedTags.forEach(name => {
-        let tag = tagStore.getBaseTag(name)!
-        tagStore.addToArticle(article.value.id, tag.id)
-    })
-    removedTags.forEach(name => {
-        let tag = currentTags.value.find(x => x.name == name)!
-        tagStore.deleteTag(tag.id, article.value.id)
-    })
+    const del = async () => {
+        for (const name of removedTags) {
+            let tag = currentTags.value.find(x => x.name == name)!
+            await tagStore.deleteTag(tag.id, article.value.id)
+        }
+    }
+    await del()
+
+    updateCurrentTags()
 }
 
 async function createTag(data: any) {
@@ -86,8 +90,8 @@ async function createTag(data: any) {
         tagError.value = error.response.data
         return
     }
-    // currentTags.value.push(tagStore.tags[tagStore.tags.length - 1])
-   
+
+    updateCurrentTags()
 }
 
 </script>

@@ -623,12 +623,14 @@ fn test_add_tag_to_article() {
 
 fn test_get_tags_from_article() {
 	mut x := do_get('http://${localserver}/api/tags/3')!
-	assert x.status() == .not_found
+	assert x.status() == .ok
+	mut tags := json.decode([]vaunt.Tag, x.body)!
+	assert tags.len == 0
 
 	x = do_get('http://${localserver}/api/tags/8')!
 	assert x.status() == .ok
 
-	tags := json.decode([]vaunt.Tag, x.body)!
+	tags = json.decode([]vaunt.Tag, x.body)!
 	assert tags.len == 1
 	assert tags[0].id == 2
 }
@@ -678,7 +680,9 @@ fn test_remove_tag_from_article() {
 	assert x.status() == .ok
 
 	x = do_get('http://${localserver}/api/tags/8')!
-	assert x.status() == .not_found
+	assert x.status() == .ok
+	mut tags := json.decode([]vaunt.Tag, x.body)!
+	assert tags.len == 0
 }
 
 fn test_delete_tag() {
@@ -691,7 +695,7 @@ fn test_delete_tag() {
 	x = do_get('http://${localserver}/api/tags/8')!
 	assert x.status() == .ok
 
-	tags := json.decode([]vaunt.Tag, x.body)!
+	mut tags := json.decode([]vaunt.Tag, x.body)!
 	assert tags.len == 1
 	assert tags[0].id == 4
 
@@ -700,7 +704,9 @@ fn test_delete_tag() {
 	assert x.status() == .ok
 	// tag is deleted from article
 	x = do_get('http://${localserver}/api/tags/8')!
-	assert x.status() == .not_found
+	assert x.status() == .ok
+	tags = json.decode([]vaunt.Tag, x.body)!
+	assert tags.len == 0
 
 	x = do_get('http://${localserver}/api/tags')!
 	assert x.status() == .ok

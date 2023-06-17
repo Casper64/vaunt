@@ -520,9 +520,6 @@ pub fn (mut app Api) update_tag() vweb.Result {
 ['/tags/:article'; get; options]
 pub fn (mut app Api) get_tags_from_article(article int) vweb.Result {
 	tags := get_tags_from_article(app.db, article)
-	if tags.len == 0 {
-		return app.not_found()
-	}
 	return app.json(tags)
 }
 

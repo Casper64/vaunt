@@ -6,22 +6,6 @@ export const useTagStore = defineStore('tag', {
     state: () => {
         return {
             tags: [] as Tag[],
-            // allTags: [{
-            //     color: '#C1CC9C',
-            //     name: 'Typescript'
-            // }, {
-            //     color: '#FEA64E',
-            //     name: 'Programming'
-            // }, {
-            //     color: '#F56D4E',
-            //     name: 'Security'
-            // }, {
-            //     color: '#5D87BF',
-            //     name: 'V'
-            // }, {
-            //     color: '#364045',
-            //     name: 'Web'
-            // }] as Tag[],
         }
     },
     actions: {
@@ -83,7 +67,6 @@ export const useTagStore = defineStore('tag', {
             if (article) {
                 await this.fetch(article)
             }
-
         }
     },
 })
