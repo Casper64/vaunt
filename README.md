@@ -310,17 +310,11 @@ and outputted to  `"[template_dir]/articles/[category_name]/[article_name].html"
 ```v ignore
 ['/articles/:category_name/:article_name']
 pub fn (mut app App) category_article_page(category_name string, article_name string) vweb.Result {
-	article_file := os.join_path(app.template_dir, 'articles', category_name, '${article_name}.html')
-	// read the generated article html file
-	
-	content := os.read_file(article_file) or {
-		eprintln(err)
+	// save html in `app.s_html` first before returning it
+	app.s_html = app.category_article_html(category_name, article_name, template_dir) or {
 		return app.not_found()
 	}
-
-	// save html in `app.s_html` first before returning it
-	app.s_html = content
-	return app.html(content)
+	return app.html(app.s_html)
 }
 ```
 
@@ -335,17 +329,9 @@ and outputted to  `"[template_dir]/articles/[article_name].html"`.
 ```v ignore
 ['/articles/:article_name']
 pub fn (mut app App) article_page(article_name string) vweb.Result {
-	article_file := os.join_path(app.template_dir, 'articles', '${article_name}.html')
-	
-	// read the generated article html file
-	content := os.read_file(article_file) or {
-		eprintln(err)
-		return app.not_found()
-	}
-
 	// save html in `app.s_html` first before returning it
-	app.s_html = content
-	return app.html(content)
+	app.s_html = app.article_html(article_name, template_dir) or { return app.not_found() }
+	return app.html(app.s_html)
 }
 ```
 
@@ -445,16 +431,8 @@ pub fn (mut app App) article_page(article_name string) vweb.Result {
 	// set seo
 	app.seo.set_article(article, app.req.url)
 
-	article_file := os.join_path(app.template_dir, 'articles', '${article_name}.html')
-
-	// read the generated article html file
-	content := os.read_file(article_file) or {
-		eprintln(err)
-		return app.not_found()
-	}
-
 	// save html in `app.s_html` first before returning it
-	app.s_html = content
+	app.s_html = app.article_html(article_name, template_dir) or { return app.not_found() }
 	return app.html(content)
 }
 ```
@@ -564,6 +542,21 @@ templates, except for the functions that return a `Result` type.
     @endfor
 </ul>
 ```
+#### Templates
+
+```v
+// get the correct url in your templates
+// usage: `@{app.article_url(article)}`
+pub fn (u &Util) article_url(article Article) string
+
+// article_html returns the html for that article
+pub fn (u &Util) article_html(article_name string, template_dir string) !vweb.RawHtml
+
+// category_article_html returns the html for that article with category
+pub fn (u &Util) category_article_html(category_name string, article_name string, template_dir string) !vweb.RawHtml
+```
+
+#### Database
 
 ```v
 pub fn (u &Util) get_all_articles() []Article
@@ -598,6 +591,10 @@ The `[]Article` type has a couple of built-in functions to filter the array.
 ```v
 pub fn (a []Article) no_category() []Article {
 	return a.filter(it.category_id == 0)
+}
+
+pub fn (a []Article) category(id int) []Article {
+	return a.filter(it.category_id == id)
 }
 
 pub fn (a []Article) visible() []Article {

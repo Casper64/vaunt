@@ -16,6 +16,7 @@ struct Theme {}
 // Base app for Vaunt which you can extend
 struct App {
 	vweb.Context
+	vaunt.Util
 pub:
 	controllers  []&vweb.ControllerPath
 	template_dir string                 [vweb_global]
@@ -66,7 +67,9 @@ fn main() {
 	vaunt.start(mut app, http_port)!
 }
 
-pub fn (mut app App) before_request() {}
+pub fn (mut app App) before_request() {
+	app.Util.db = app.db
+}
 
 ['/']
 pub fn (mut app App) home() vweb.Result {
@@ -77,32 +80,18 @@ pub fn (mut app App) home() vweb.Result {
 
 ['/articles/:category_name/:article_name']
 pub fn (mut app App) category_article_page(category_name string, article_name string) vweb.Result {
-	article_file := os.join_path(app.template_dir, 'articles', category_name, '${article_name}.html')
-
-	// read the generated article html file
-	content := os.read_file(article_file) or {
-		eprintln(err)
+	// save html in `app.s_html` first before returning it
+	app.s_html = app.category_article_html(category_name, article_name, template_dir) or {
 		return app.not_found()
 	}
-
-	// save html in `app.s_html` first before returning it
-	app.s_html = content
-	return app.html(content)
+	return app.html(app.s_html)
 }
 
 ['/articles/:article_name']
 pub fn (mut app App) article_page(article_name string) vweb.Result {
-	article_file := os.join_path(app.template_dir, 'articles', '${article_name}.html')
-
-	// read the generated article html file
-	content := os.read_file(article_file) or {
-		eprintln(err)
-		return app.not_found()
-	}
-
 	// save html in `app.s_html` first before returning it
-	app.s_html = content
-	return app.html(content)
+	app.s_html = app.article_html(article_name, template_dir) or { return app.not_found() }
+	return app.html(app.s_html)
 }
 
 ['/tags/:tag_name']

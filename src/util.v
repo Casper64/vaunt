@@ -2,6 +2,7 @@ module vaunt
 
 import vweb
 import db.pg
+import os
 
 type SkipGenerationResult = vweb.Result
 
@@ -16,7 +17,7 @@ pub mut:
 }
 
 // get the correct url in your templates
-// // usage: `@{app.article_url(app.db, article)}`
+// // usage: `@{app.article_url(article)}`
 pub fn (u &Util) article_url(article Article) string {
 	if article.category_id != 0 {
 		category := get_category_by_id(u.db, article.category_id) or { return '' }
@@ -26,6 +27,26 @@ pub fn (u &Util) article_url(article Article) string {
 
 	url := '/articles/${article.name}'
 	return sanitize_path(url)
+}
+
+// article_html returns the html for that article
+pub fn (u &Util) article_html(article_name string, template_dir string) !vweb.RawHtml {
+	// If you press the `publish` button in the admin panel the html will be generated
+	// and outputted to  `"[template_dir]/articles/[article_name].html"`.
+	mut article_file := os.join_path(template_dir, 'articles', '${article_name}.html')
+
+	// read the generated article html file
+	return os.read_file(article_file)!
+}
+
+// category_article_html returns the html for that article with category
+pub fn (u &Util) category_article_html(category_name string, article_name string, template_dir string) !vweb.RawHtml {
+	// If you press the `publish` button in the admin panel the html will be generated
+	// and outputted to  `"[template_dir]/articles/[category_name]/[article_name].html"`.
+	mut article_file := os.join_path(template_dir, 'articles', category_name, '${article_name}.html')
+
+	// read the generated article html file
+	return os.read_file(article_file)!
 }
 
 pub fn (u &Util) get_all_articles() []Article {
@@ -233,6 +254,10 @@ pub fn get_tag_by_id(db pg.DB, tag int) !Tag {
 
 pub fn (a []Article) no_category() []Article {
 	return a.filter(it.category_id == 0)
+}
+
+pub fn (a []Article) category(id int) []Article {
+	return a.filter(it.category_id == id)
 }
 
 pub fn (a []Article) visible() []Article {
