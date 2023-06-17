@@ -142,7 +142,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 		$if method.return_type is vweb.Result {
 			routes << method.name
 
-			// validate routes at comptime
+			// validate routes
 			if method.name == 'article_page' {
 				if method.attrs.any(it.starts_with('/articles/:')) == false {
 					eprintln('error: expecting method "article_page" to be a dynamic route that starts with "/articles/"')
@@ -153,16 +153,22 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 					eprintln('error: expecting method "category_article_page" to be a dynamic route that starts with "/articles/"')
 					return
 				}
+			} else if method.name == 'tag_page' {
+				// nothing to do 	
 			} else if method.attrs.any(it.contains(':')) {
 				eprintln('error while generating "${method.name}": generating custom dynamic routes is not supported yet!')
 			} else if method.attrs.len > 1 {
 				eprintln('error while generating "${method.name}": custom routes can only have 1 property: the route')
-			} else if method.name != 'not_found' {
+			} else if method.name != 'not_found' && validate_route_http_method(method.attrs) {
 				i_start := time.ticks()
 
 				mut route := method.name
 				mut url := '/${route}'
-				if method.attrs.len == 1 {
+				// get route name from attributes if any
+				for attr in method.attrs {
+					if attr.starts_with('/') == false {
+						continue
+					}
 					route = method.attrs[0]
 					// add index pages for routes like "/" -> "index.html" or "/pages/" -> "pages/index.html
 					url = route
@@ -190,9 +196,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 				}
 				// run method, resulting html should be in `app.s_html`
 				app.$method()
-				if app.s_html.len == 0 {
-					eprintln('warning: method "${method.name}" produced no html! Did you forget to set `app.s_html`?')
-				} else {
+				if verify_app_method_result(mut app, method.name) {
 					mut index_f := os.create(file_path)!
 					index_f.write(app.s_html.bytes())!
 					index_f.close()
@@ -215,6 +219,7 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 		return
 	} else if 'category_article_page' !in routes {
 		eprintln('[Vaunt] Error: expecting method "category_article_page (string, string) vweb.Result" on "${T.name}"${std_msg}')
+		return
 	} else {
 		println('[Vaunt] Generating article pages...')
 		urls << generate_articles(mut app, dist_path) or { panic(err) }
@@ -315,6 +320,8 @@ fn generate_articles[T](mut app T, dist_path string) ![]string {
 
 		article_file_path := os.join_path(articles_path, article_path)
 		os.mkdir_all(os.dir(article_file_path))!
+
+		mut method_name := 'article_page'
 		// no category
 		article_name := sanitize_path(article.name)
 		if article.category_id == 0 {
@@ -322,11 +329,11 @@ fn generate_articles[T](mut app T, dist_path string) ![]string {
 		} else {
 			category := get_category_by_id(app.db, article.category_id)!
 			category_name := sanitize_path(category.name)
+			method_name = 'category_article_page'
 			app.category_article_page(category_name, article_name)
 		}
 
-		if app.s_html.len == 0 {
-			eprintln('warning: article "${article.name}" produced no html! Did you forget to set `app.s_html`? Skipping output')
+		if verify_app_method_result(mut app, '${method_name} (article_name=${article.name})') == false {
 			continue
 		}
 
@@ -380,6 +387,9 @@ fn generate_tags[T](mut app T, dist_path string) ![]string {
 		tag_path += '.html'
 		urls << 'tags/${tag_path}'
 		app.tag_page(tag.name)
+		if verify_app_method_result(mut app, 'tag_page (name=${tag.name})') == false {
+			continue
+		}
 
 		if app.s_html.len == 0 {
 			eprintln('warning: tag "${tag.name}" produced no html! Did you forget to set `app.s_html`? Skipping output')
@@ -401,4 +411,40 @@ fn generate_tags[T](mut app T, dist_path string) ![]string {
 	}
 
 	return urls
+}
+
+// verify_app_method_result checks if the app route returned a valid result. Only 200 status
+// codes and no empty values of `s_html`
+fn verify_app_method_result[T](mut app T, method_name string) bool {
+	defer {
+		app.status = '200 OK'
+	}
+	if app.status.starts_with('200') == false {
+		eprintln('warning: method "${method_name}" returned non-200 status! Skipping...')
+		return false
+	} else if app.s_html.len == 0 {
+		eprintln('warning: method "${method_name}" produced no html! Did you forget to set `app.s_html`?')
+		return false
+	}
+
+	return true
+}
+
+fn validate_route_http_method(attrs []string) bool {
+	if attrs.len == 0 {
+		return true
+	}
+
+	mut methods := []string{}
+	for attr in attrs {
+		if attr.starts_with('/') {
+			continue
+		}
+		methods << attr.to_upper()
+	}
+	if methods.len != 0 && 'GET' !in methods {
+		return false
+	}
+
+	return true
 }

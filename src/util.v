@@ -9,9 +9,10 @@ pub struct Util {
 pub:
 	skip_generation SkipGenerationResult
 pub mut:
-	db           pg.DB  [required]
-	theme_css    string
+	db           pg.DB        [required]
+	theme_css    vweb.RawHtml
 	is_superuser bool
+	s_html       string // used by Vaunt to generate html
 }
 
 // get the correct url in your templates

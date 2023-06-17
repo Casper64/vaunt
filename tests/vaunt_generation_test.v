@@ -173,6 +173,12 @@ fn test_no_custom_dynamic() {
 	assert files.len == 1
 }
 
+fn test_only_methods_with_get() {
+	file := os.join_path(output_dir, 'posting.html')
+
+	assert os.exists(file) == false
+}
+
 fn test_article_show_false() {
 	file := os.join_path(output_dir, 'articles', no_show_article + '.html')
 

@@ -87,7 +87,7 @@ fn update_theme_db[T](db &pg.DB, theme &T) ! {
 }
 
 // update_theme retrieves all options from the database and updates the theme
-pub fn update_theme[T](db &pg.DB, mut theme T) string {
+pub fn update_theme[T](db &pg.DB, mut theme T) vweb.RawHtml {
 	mut all_colors := map[string]string{}
 
 	options := sql db {

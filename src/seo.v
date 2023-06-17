@@ -1,6 +1,7 @@
 module vaunt
 
 import time
+import vweb
 
 // SEO module
 
@@ -118,7 +119,7 @@ pub fn (mut seo SEO) set_description(description string) {
 }
 
 // html returns the meta tags for the SEO configuration
-pub fn (mut seo SEO) html() string {
+pub fn (mut seo SEO) html() vweb.RawHtml {
 	mut meta_tags := []string{}
 
 	meta_tags << '<meta name="description" content="${seo.description}">'

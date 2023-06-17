@@ -85,7 +85,6 @@ pub mut:
 	dev    bool   [vweb_global] // used by Vaunt internally
 	db     pg.DB
 	theme  Theme // Theme settings
-	s_html string // used by Vaunt to generate html
 }
 
 fn main() {

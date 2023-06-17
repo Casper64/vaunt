@@ -136,6 +136,12 @@ pub fn (mut app App) custom_dynamic(dynamic string) vweb.Result {
 	return app.html(dynamic)
 }
 
+['/posting'; post]
+pub fn (mut app App) only_post() vweb.Result {
+	app.s_html = 'post'
+	return app.html(app.s_html)
+}
+
 pub fn (mut app App) shutdown() vweb.Result {
 	spawn app.gracefull_exit()
 	return app.ok('good bye')
