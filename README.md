@@ -15,13 +15,15 @@ contain any code used in this repository.
 ![vaunt_2](https://user-images.githubusercontent.com/43839798/232623199-0df92ccc-2b12-489c-9a35-b730b9c6476d.png)
 
 ## Features
-- Admin panel with visual block editor for content creation
-- Fully static site generation
+- Static site generator
 - easy to configure SEO (Search Engine Optimization)
+- The CMS backend is optional
+- Admin panel and visual block editor for content creation
 - User configurable themes
 - Image uploads
 
-
+See [only use static generator](#only-static-generator) if you only want to convert your vweb 
+application into a static website and don't need the admin panel.
 
 ## Requirements
 Make sure you have V installed. You can check out the 
@@ -127,6 +129,41 @@ The controllers that are generated control the api, admin panel and file uploads
 You can start the application with `v watch run main.v` for single files. If you have 
 multiple `.v` files you can put them in the `src` folder and run `v watch run src`.
 
+## Only static generator
+You can also use Vaunt to generate a static version of your vweb app if you don't need
+the CMS backend.
+
+You can still use the [SEO](#search-engine-optimization-seo) utilities.
+
+You only have to set `app.s_html` in the routes you want to generate.
+See [custom routes](#custom-routes) and [generate](#generate) for more information.
+
+**Example:**
+```v
+module main
+
+import vaunt
+import vweb
+
+struct App {
+	vweb.Context
+pub mut:
+	dev    bool   [vweb_global] // used by Vaunt internally
+	s_html string // used by Vaunt to generate html
+}
+
+fn main() {
+	mut app := &App{}
+	vaunt.start(mut app, 8080)!
+}
+
+pub fn (mut app App) index() vweb.Result {
+	// save html in `app.s_html` first before returning it
+	app.s_html = 'index'
+	return app.html(app.s_html)
+}
+```
+
 ## Admin panel
 The admin panel is used to created articles via a visual editor. You can access the
 admin panel by navigating to `"/admin"`.
@@ -213,8 +250,8 @@ pub fn (mut app App) article_page(article_name string) vweb.Result {
 ```
 
 ### Tags
-You can create tags in the admin panel and generate a html page for every tag you create
-by adding a`tag_page` method with dynamic route `"/tags/:tag_name"`.
+You can create tags in the admin panel and generate a html page for every tag. 
+Add a`tag_page` method with dynamic route `"/tags/:tag_name"`.
 
 The html pages are generated in `"[template_dir]/tags/[tag_name].html"`.
 
@@ -260,6 +297,8 @@ Currently custom dynamic routes are not supported.
 ## Generate
 You can generate the static site by passing the `--generate` flag or `-g` for short.
 All files needed to host your website will be in the generated `public` directory.
+Including all static files.
+
 ```
 v run [project] --generate
 ```
@@ -533,6 +572,26 @@ pub fn (u &Util) article_html(article_name string, template_dir string) !vweb.Ra
 
 // category_article_html returns the html for that article with category
 pub fn (u &Util) category_article_html(category_name string, article_name string, template_dir string) !vweb.RawHtml
+```
+
+#### Vweb Config
+You can edit the vweb configuration in `vaunt.start`
+
+**Example:**
+
+```v
+vaunt.start(mut app, 8080, host: '0.0.0.0', nr_workers: 4)
+```
+
+```v
+[params]
+pub struct RunParams {
+	family               net.AddrFamily = .ip
+	host                 string = '127.0.0.1'
+	nr_workers           int    = 1
+	pool_channel_slots   int    = 1000
+	show_startup_message bool   = true
+}
 ```
 
 #### Database

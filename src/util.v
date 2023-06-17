@@ -10,7 +10,7 @@ pub struct Util {
 pub:
 	skip_generation SkipGenerationResult
 pub mut:
-	db           pg.DB        [required]
+	db           pg.DB
 	theme_css    vweb.RawHtml
 	is_superuser bool
 	s_html       string // used by Vaunt to generate html

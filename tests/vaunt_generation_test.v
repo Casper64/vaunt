@@ -83,8 +83,8 @@ fn test_vaunt_runs_in_background() {
 
 fn test_generate_succeeds() {
 	result := os.execute('${os.quoted_path(vexe)} run tests/vaunt_generation_test_app.v  ${sport2} ${exit_after_time} ${db_user} ${db_password} ${db_name} --generate --out ${output_dir}')
-	assert result.exit_code == 0
 	dump(result.output)
+	assert result.exit_code == 0
 	// test custom output dir
 	assert result.output.contains('"${output_dir}"') == true
 	assert os.exists(output_dir) == true

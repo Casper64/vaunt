@@ -6,6 +6,11 @@ import flag
 import time
 import net.http
 import db.pg
+import net
+
+const (
+	std_err_msg = '\nSee the docs for more information on required methods.'
+)
 
 pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T, secret string) ![]&vweb.ControllerPath {
 	init_database(db)!
@@ -66,7 +71,20 @@ pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T, secr
 	return controllers
 }
 
-pub fn start[T](mut app T, port int) ! {
+interface DbInterface {
+	db voidptr
+}
+
+[params]
+pub struct RunParams {
+	family               net.AddrFamily = .ip
+	host                 string = '127.0.0.1'
+	nr_workers           int    = 1
+	pool_channel_slots   int    = 1000
+	show_startup_message bool   = true
+}
+
+pub fn start[T](mut app T, port int, params RunParams) ! {
 	mut fp := flag.new_flag_parser(os.args)
 	fp.application('Vaunt')
 	fp.version('0.2')
@@ -90,20 +108,52 @@ pub fn start[T](mut app T, port int) ! {
 	}
 
 	if f_create_user {
-		create_super_user(app.db)!
+		$if T is DbInterface {
+			create_super_user(app.db)!
+		} $else {
+			eprintln('error: cannot create user: missing field "db".\nYou have to use the CMS backend to set users: `vaunt.init`')
+		}
 		return
 	}
 
 	// start web server in dev mode
 	app.dev = !f_user
 
+	combined_params := vweb.RunParams{
+		...params
+		port: port
+	}
+
 	// 127.0.0.1 because its soo much faster on windows
-	vweb.run_at(app, host: '127.0.0.1', port: port, family: .ip, nr_workers: 1)!
+	vweb.run_at(app, combined_params)!
+}
+
+// These interfaces are used to make using these methods optional to the user
+interface AppWithTemplateDir {
+	template_dir string
+}
+
+interface AppWithUploadDir {
+	upload_dir string
+}
+
+interface AppWithTagPage {
+mut:
+	tag_page(string) vweb.Result
+}
+
+interface AppWithArticlePage {
+mut:
+	article_page(string) vweb.Result
+}
+
+interface AppWithArticleCategoryPage {
+mut:
+	category_article_page(string, string) vweb.Result
 }
 
 fn start_site_generation[T](mut app T, output_dir string) ! {
 	println('[Vaunt] Starting site generation into "${output_dir}"...')
-	std_msg := '\nSee the docs for more information on required methods.'
 
 	start := time.ticks()
 	// the output directory's path
@@ -121,10 +171,13 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 		os.mkdir_all(os.dir(static_out_path))!
 		os.cp(static_path, static_out_path)!
 	}
-	// copy upload dir
-	upload_path := os.join_path(dist_path, os.base(app.upload_dir))
-	os.mkdir(upload_path)!
-	os.cp_all(app.upload_dir, upload_path, true)!
+
+	$if T is AppWithUploadDir {
+		// copy upload dir
+		upload_path := os.join_path(dist_path, os.base(app.upload_dir))
+		os.mkdir(upload_path)!
+		os.cp_all(app.upload_dir, upload_path, true)!
+	}
 
 	println('[Vaunt] Generating custom pages...')
 
@@ -145,20 +198,21 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 			// validate routes
 			if method.name == 'article_page' {
 				if method.attrs.any(it.starts_with('/articles/:')) == false {
-					eprintln('error: expecting method "article_page" to be a dynamic route that starts with "/articles/"')
+					eprintln('[Vaunt] Error: expecting method "article_page" to be a dynamic route that starts with "/articles/"${vaunt.std_err_msg}')
 					return
 				}
 			} else if method.name == 'category_article_page' {
 				if method.attrs.any(it.starts_with('/articles/:')) == false {
-					eprintln('error: expecting method "category_article_page" to be a dynamic route that starts with "/articles/"')
+					eprintln('[Vaunt] Error: expecting method "category_article_page" to be a dynamic route that starts with "/articles/"${vaunt.std_err_msg}')
 					return
 				}
 			} else if method.name == 'tag_page' {
-				// nothing to do 	
+				if method.attrs.any(it.starts_with('/tags/:')) == false {
+					eprintln('[Vaunt] Error: expecting method "tag_page" to be a dynamic route that starts with "/tags/"${vaunt.std_err_msg}')
+					return
+				}
 			} else if method.attrs.any(it.contains(':')) {
 				eprintln('error while generating "${method.name}": generating custom dynamic routes is not supported yet!')
-			} else if method.attrs.len > 1 {
-				eprintln('error while generating "${method.name}": custom routes can only have 1 property: the route')
 			} else if method.name != 'not_found' && validate_route_http_method(method.attrs) {
 				i_start := time.ticks()
 
@@ -213,22 +267,17 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 			}
 		}
 	}
-	// articles
-	if 'article_page' !in routes {
-		eprintln('[Vaunt] Error: expecting method "article_page (string) vweb.Result" on "${T.name}"${std_msg}')
-		return
-	} else if 'category_article_page' !in routes {
-		eprintln('[Vaunt] Error: expecting method "category_article_page (string, string) vweb.Result" on "${T.name}"${std_msg}')
-		return
-	} else {
-		println('[Vaunt] Generating article pages...')
-		urls << generate_articles(mut app, dist_path) or { panic(err) }
-	}
-
-	// tags
-	if 'tag_page' in routes {
-		println('[Vaunt] Generating tag pages...')
-		urls << generate_tags(mut app, dist_path) or { panic(err) }
+	$if T is AppWithTemplateDir {
+		// articles
+		$if T is AppWithArticlePage || T is AppWithArticleCategoryPage {
+			println('[Vaunt] Generating article pages...')
+			urls << generate_articles(mut app, dist_path) or { panic(err) }
+		}
+		// tags
+		$if T is AppWithTagPage {
+			println('[Vaunt] Generating tag pages...')
+			urls << generate_tags(mut app, dist_path) or { panic(err) }
+		}
 	}
 
 	// sitemap.xml
@@ -266,6 +315,13 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 }
 
 fn generate_articles[T](mut app T, dist_path string) ![]string {
+	$if T !is DbInterface {
+		return error('App does not have a "db" field!')
+	}
+	$if T !is AppWithTemplateDir {
+		return error('App does not have a "template_dir" field!')
+	}
+
 	articles_path := os.join_path(dist_path, 'articles')
 	os.mkdir(articles_path)!
 
@@ -325,12 +381,23 @@ fn generate_articles[T](mut app T, dist_path string) ![]string {
 		// no category
 		article_name := sanitize_path(article.name)
 		if article.category_id == 0 {
-			app.article_page(article_name)
+			$if T is AppWithArticlePage {
+				app.article_page(article_name)
+			} $else {
+				eprintln('[Vaunt] Error: can\'t generate html for article "${article.name}" since the method `article_page` does not exists!\nSee the docs for more information on required methods.')
+				continue
+			}
 		} else {
 			category := get_category_by_id(app.db, article.category_id)!
 			category_name := sanitize_path(category.name)
 			method_name = 'category_article_page'
-			app.category_article_page(category_name, article_name)
+
+			$if T is AppWithArticleCategoryPage {
+				app.category_article_page(category_name, article_name)
+			} $else {
+				eprintln('[Vaunt] Error: can\'t generate html for article "${article.name}" since the article has a category and the method `category_article_page` does not exists!\nSee the docs for more information on required methods.')
+				continue
+			}
 		}
 
 		if verify_app_method_result(mut app, '${method_name} (article_name=${article.name})') == false {
@@ -355,6 +422,10 @@ fn generate_articles[T](mut app T, dist_path string) ![]string {
 }
 
 fn generate_tags[T](mut app T, dist_path string) ![]string {
+	$if T !is DbInterface {
+		return error('App does not have a "db" field!')
+	}
+
 	tags_path := os.join_path(dist_path, 'tags')
 	os.mkdir(tags_path)!
 

@@ -14,6 +14,7 @@
 - [X] Article "tags"
 - [X] Add authentication system, so it's possible to have the server and editor online.
 - [X] Import markdown feature
+- [X] Make CMS backend optional, so it is possible to only use Vaunt as static site generator
 - [ ] Add layout blocks
 - [ ] Reference article block
 - [ ] Documentation theme
