@@ -168,135 +168,12 @@ to enable them for your whole app. Or call them in individual routes.
 When you generate the site all forms of authentication will be skipped,
 except if you return early.
 
-**Example**:
-```v
-// no_auth will output a html page with "content"
-pub fn (mut app App) no_early_exit() vweb.Result {
-	login_required(mut app.Context, app_secret)
-	app.s_html = 'content'
-	return app.html('content')
-}
-
-// early exit and skip generation
-pub fn (mut app App) with_early_exit() vweb.Result {
-	if login_required(mut app.Context, app_secret) == false {
-		// special field on `vaunt.Util`
-		return app.skip_generation
-	}
-	app.s_html = 'content'
-	return app.html('content')
-}
-```
-
-## Theme Settings
-It is possible to make you theme configurable in the admin panel.
-
-![vaunt_theme](https://user-images.githubusercontent.com/43839798/232623129-68a42746-8fc4-4b49-bde8-7d516b66f31f.gif)
-
-All fields of the `Theme` will be saved in the database and rendered in the admin panel.
-
-### Colors
-You can add a color option with the type `vaunt.Color`. For example we could
-modify the `Theme` struct from the earlier example to include a background color:
-
-```v oksyntax
-struct Theme {
-pub mut:
-	background vaunt.Color
-}
-```
-
-### Class Lists
-Let's say we want the option to display navigation links aligned left, centered
-or right. We can use the `ClassList` struct for that.
-
-**Example:**
-```v oksyntax
-struct Theme {
-pub mut:
-    background vaunt.Color
-    nav_align  vaunt.ClassList
-}
-
-// ...
-
-fn main() {
-    // ...
-    theme := Theme{
-		background: '#ffffff'
-		nav_align: vaunt.ClassList{
-			name: 'Navigation links aligmnent'
-			selected: 'nav-center'
-			options: {
-				'nav-left':   'left'
-				'nav-center': 'center'
-				'nav-right':  'right'
-			}
-		}
-	}
-    // ...
-}
-```
-
-In the example above the default background color is set to white and the options
-for the navigation links are set as following: 
-
-`name` will be the name displayed in the admin panel.
-`selected` will be the default option
-`options` is a map where the keys are the class names and the values are the names 
-displayed in the admin panel.
-
-### Usage
-
-Using the vweb's `before_request` middleware you can fetch the latest theme settings
-before the page is rendered. See the 
-[Vaunt default theme](https://github.com/Casper64/vaunt-default) for a more 
-comprehensive implementation.
-
-**Example:**
-
-```v ignore
-// fetch the new latest theme before processing a request
-pub fn (mut app App) before_request() {
-	// copy database connection to Util
-	app.Util.db = app.db
-	
-	// only update when request is a route, assuming all resources contain a "."
-	if app.req.url.contains('.') == false {
-		app.theme_css = vaunt.update_theme(app.db, mut app.theme)
-	}
-}
-```
-
-All options are available in templates using `app.theme`.
-
-**Example:**
-```html
-<nav class="@{app.theme.nav_align.selected}"></nav>
-```
-Will produce:
-```html
-<nav class="nav-center"></nav>
-```
-
-The generated css is stored in `app.theme_css` and is a style tag which contains the css.
-You can directly include `app.theme_css` in your templates.
-
-**Example:**
-```html
-<head>
-    @{app.theme_css}
-</head>
-```
-
 ## Routing
-When creating a route the html that is returned must be save in `app.s_html`
+When creating a route the html that is returned must be saved in `app.s_html`
 before returning. If you forget to store the generated html in `app.s_html` 
 the generated output of the static site won't contain your html.
 
-The following routes **must** be defined for the site generation to work:
-- Route for article with a category
-- Route for article without a category
+There are three dynamic routes that vaunt can generate html for:
 
 ### Article with a category
 A method with name `category_article_page` and dynamic route 
@@ -336,8 +213,8 @@ pub fn (mut app App) article_page(article_name string) vweb.Result {
 ```
 
 ### Tags
-You can generate a html page for every tag you create by adding a`tag_page` method
-with dynamic route `"/tags/:tag_name"`. This method is optional.
+You can create tags in the admin panel and generate a html page for every tag you create
+by adding a`tag_page` method with dynamic route `"/tags/:tag_name"`.
 
 The html pages are generated in `"[template_dir]/tags/[tag_name].html"`.
 
@@ -524,6 +401,108 @@ For all available options see [the SEO api](#seo).
 
 ### Sitemap
 The `sitemap.xml` file is automatically generated if you provide `SEO.website_url`.
+
+
+## Theme Settings
+It is possible to make you theme configurable in the admin panel.
+
+![vaunt_theme](https://user-images.githubusercontent.com/43839798/232623129-68a42746-8fc4-4b49-bde8-7d516b66f31f.gif)
+
+All fields of the `Theme` will be saved in the database and rendered in the admin panel.
+
+### Colors
+You can add a color option with the type `vaunt.Color`. For example we could
+modify the `Theme` struct from the earlier example to include a background color:
+
+```v oksyntax
+struct Theme {
+pub mut:
+	background vaunt.Color
+}
+```
+
+### Class Lists
+Let's say we want the option to display navigation links aligned left, centered
+or right. We can use the `ClassList` struct for that.
+
+**Example:**
+```v oksyntax
+struct Theme {
+pub mut:
+    background vaunt.Color
+    nav_align  vaunt.ClassList
+}
+
+// ...
+
+fn main() {
+    // ...
+    theme := Theme{
+		background: '#ffffff'
+		nav_align: vaunt.ClassList{
+			name: 'Navigation links aligmnent'
+			selected: 'nav-center'
+			options: {
+				'nav-left':   'left'
+				'nav-center': 'center'
+				'nav-right':  'right'
+			}
+		}
+	}
+    // ...
+}
+```
+
+In the example above the default background color is set to white and the options
+for the navigation links are set as following:
+
+`name` will be the name displayed in the admin panel.
+`selected` will be the default option
+`options` is a map where the keys are the class names and the values are the names
+displayed in the admin panel.
+
+### Usage
+
+Using the vweb's `before_request` middleware you can fetch the latest theme settings
+before the page is rendered. See the
+[Vaunt default theme](https://github.com/Casper64/vaunt-default) for a more
+comprehensive implementation.
+
+**Example:**
+
+```v ignore
+// fetch the new latest theme before processing a request
+pub fn (mut app App) before_request() {
+	// copy database connection to Util
+	app.Util.db = app.db
+	
+	// only update when request is a route, assuming all resources contain a "."
+	if app.req.url.contains('.') == false {
+		app.theme_css = vaunt.update_theme(app.db, mut app.theme)
+	}
+}
+```
+
+All options are available in templates using `app.theme`.
+
+**Example:**
+```html
+<nav class="@{app.theme.nav_align.selected}"></nav>
+```
+Will produce:
+```html
+<nav class="nav-center"></nav>
+```
+
+The generated css is stored in `app.theme_css` and is a style tag which contains the css.
+You can directly include `app.theme_css` in your templates.
+
+**Example:**
+```html
+<head>
+    @{app.theme_css}
+</head>
+```
 
 ## Api
 
@@ -771,22 +750,6 @@ pub mut:
 	author          []string
 	section         string
 	tag             []string
-}
-```
-
-### Tags
-
-```v oksyntax
-// should use many to many relation, but that's not yet possible with orm
-// so there will be duplicates in the database :/
-// also the reason why `name` can't have the `unique` attribute
-[table: 'tags']
-pub struct Tag {
-pub mut:
-	id         int    [primary; sql: serial]
-	article_id int
-	name       string [nonull]
-	color      string [nonull]
 }
 ```
 
