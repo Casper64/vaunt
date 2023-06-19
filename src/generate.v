@@ -2,6 +2,8 @@ module vaunt
 
 import json
 import net.urllib
+import os
+import vweb
 
 // 			Generate Block Html
 // =======================================
@@ -104,14 +106,57 @@ pub fn generate_image(block &Block) string {
 	data := json.decode(ImageData, block.data) or { ImageData{} }
 
 	mut url := data.file['url']
-	// check if image is local or not
+
+	// properties for the html `picture` `srcset`.
+	mut url_small, mut url_medium := '', ''
+
+	name := os.file_name(url)
+	alt := if data.caption != '' { '[${data.caption}]' } else { '[${name}]' }
+
 	if url.starts_with('http://127.0.0.1') || url.starts_with('http://localhost') {
+		// image is local
 		url_s := urllib.parse(data.file['url']) or { urllib.URL{} }
 		url = url_s.path
+
+		url_small = os.dir(url) + '/small/' + name
+		url_medium = os.dir(url) + '/medium/' + name
+
+		wd := os.getwd()
+		// check if the small and medium image path exist
+		if os.exists(os.join_path(wd, url_small[1..])) == false {
+			url_small = ''
+		}
+		if os.exists(os.join_path(wd, url_medium[1..])) == false {
+			url_medium = ''
+		}
 	}
 
-	img_alt := if data.caption != '' { '[${data.caption}]' } else { '[image]' }
+	picture := get_html_picture_from_src(url, alt)
+
 	return $tmpl('./templates/blocks/img.html')
+}
+
+// get_html_picture_from_url returns a `picture` html element containing 3
+// sizes of the image: small (640px), medium (1280px) and full-size, if they exist
+// in the `uploads` folder.
+pub fn get_html_picture_from_src(url string, alt string) vweb.RawHtml {
+	// properties for the html `picture` `srcset`.
+	mut url_small, mut url_medium := '', ''
+
+	name := os.file_name(url)
+	url_small = os.dir(url) + '/small/' + name
+	url_medium = os.dir(url) + '/medium/' + name
+
+	wd := os.getwd()
+	// check if the small and medium image path exist
+	if os.exists(os.join_path(wd, url_small[1..])) == false {
+		url_small = ''
+	}
+	if os.exists(os.join_path(wd, url_medium[1..])) == false {
+		url_medium = ''
+	}
+
+	return $tmpl('./templates/blocks/picture.html')
 }
 
 pub struct EmbedData {

@@ -4,6 +4,7 @@ import json
 import net.http
 import db.pg
 import vaunt
+import stbi
 
 const (
 	sport           = 12380
@@ -17,6 +18,9 @@ const (
 
 	vaunt_username  = 'admin'
 	jwt_token       = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwIiwibmFtZSI6ImFkbWluIiwiaWF0IjoxNjg0MDkwMTgwfQ.OJvgvMZ2uS6odHQ6vfp9zMnV765ssH4bjcppDKUxS9k'
+
+	v_logo          = 'tests/testdata/v-logo.png'
+	v_logo_name     = os.file_name(v_logo)
 )
 
 // setup of vaunt webserver
@@ -416,11 +420,13 @@ fn test_upload_image() {
 	assert x.status() == .bad_request
 	assert x.body == 'error: field "image" is required in files'
 
+	fdata := os.read_file(v_logo)!
+
 	mut files := []http.FileData{}
 	files << http.FileData{
 		filename: ''
-		content_type: 'text/plain'
-		data: '"This is a test upload"'
+		content_type: 'image/png'
+		data: fdata
 	}
 	mut form_config := http.PostMultipartFormConfig{
 		form: {
@@ -438,9 +444,9 @@ fn test_upload_image() {
 
 	mut files2 := []http.FileData{}
 	files2 << http.FileData{
-		filename: 'data.txt'
-		content_type: 'text/plain'
-		data: '"This is a test upload"'
+		filename: v_logo_name
+		content_type: 'image/png'
+		data: fdata
 	}
 	mut form_config2 := http.PostMultipartFormConfig{
 		form: {
@@ -470,18 +476,30 @@ fn test_upload_image() {
 	assert image.src == image_block.file['url']
 }
 
+fn test_image_resizing() {
+	assert os.exists('tests/uploads/img/${v_logo_name}') == true
+	assert os.exists('tests/uploads/img/small/${v_logo_name}') == true
+	// image size is 1024x1024 so the medium image should not be generated.
+	assert os.exists('tests/uploads/img/medium/${v_logo_name}') == false
+
+	d_d := stbi.load('tests/uploads/img/small/${v_logo_name}')!
+	assert d_d.width == vaunt.small_image_size
+	assert d_d.height == vaunt.small_image_size
+}
+
 fn test_delete_image() {
 	mut x := do_post('http://${localserver}/api/delete-image', '') or { panic(err) }
 	assert x.status() == .bad_request
 	assert x.body == 'error: fields "image" and "article" are required'
 
 	x = do_post_form('http://${localserver}/api/delete-image', {
-		'image':   'data.txt'
+		'image':   v_logo_name
 		'article': '1'
 	}) or { panic(err) }
 	assert x.status() == .ok
 
-	assert os.exists('tests/uploads/img/data.txt') == false
+	assert os.exists('tests/uploads/img/${v_logo_name}') == false
+	assert os.exists('tests/uploads/img/small/${v_logo_name}') == false
 
 	mut db := get_connection() or { panic(err) }
 	// deleted img id should be 4

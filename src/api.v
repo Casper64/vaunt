@@ -10,7 +10,7 @@ import time
 import json
 import stbi
 
-const (
+pub const (
 	resizable_image_mimes = ['.png', '.jpg', '.jpeg', '.tga', '.bmp']
 	small_image_size      = 640
 	medium_image_size     = 1280
@@ -790,6 +790,14 @@ fn (mut app Api) delete_image_file(article_id int, file_path string) ! {
 	}
 	if os.exists(file_path) {
 		os.rm(file_path)!
+
+		// Also remove the image from the `small` and `medium` directory
+		// ignore any errors since we don't know if the images will exist
+		name := os.file_name(file_path)
+		path_small := os.dir(file_path) + '/small/' + name
+		path_medium := os.dir(file_path) + '/medium/' + name
+		os.rm(path_small) or {}
+		os.rm(path_medium) or {}
 	} else {
 		return error('image "${file_path}" does not exist')
 	}
@@ -915,7 +923,7 @@ fn upload_resized_images_from(fdata []u8, name string, img_dir string) ! {
 		return
 	}
 
-	img := stbi.load(file_path)!
+	img := stbi.load(file_path, desired_channels: 0)!
 
 	println('file info: w:${img.width} h:${img.height} c:${img.nr_channels}')
 	// get minimum width/height to determine orientation
@@ -940,7 +948,7 @@ fn upload_resized_images_from(fdata []u8, name string, img_dir string) ! {
 		new_width = int(f32(new_height) / f32(img.height) * f32(img.width))
 	}
 
-	sm_img := stbi.resize_uint8(img, new_width, new_height)
+	sm_img := stbi.resize_uint8(img, new_width, new_height)!
 	stbi_write_ext(sm_img, small_file_path)!
 
 	// medium image
@@ -960,27 +968,27 @@ fn upload_resized_images_from(fdata []u8, name string, img_dir string) ! {
 		new_width = int(f32(new_height) / f32(img.height) * f32(img.width))
 	}
 
-	md_img := stbi.resize_uint8(img, new_width, new_height)
+	md_img := stbi.resize_uint8(img, new_width, new_height)!
 	stbi_write_ext(md_img, medium_file_path)!
 }
 
 // stbi_write_ext calls the right `stbi_write_*` function for each file extension and
 // returns an error if the file extension is unsupported.
 fn stbi_write_ext(img &stbi.Image, path string) ! {
-	ext := os.file_ext(path)
-	match ext {
-		'.png' {
+	match img.ext {
+		'png' {
 			stbi.stbi_write_png(path, img.width, img.height, img.nr_channels, img.data,
 				img.width * 4)!
 		}
-		'.jpeg', '.jpg' {
+		'jpeg', 'jpg' {
+			println('write jpeg')
 			stbi.stbi_write_jpg(path, img.width, img.height, img.nr_channels, img.data,
-				80)!
+				100)!
 		}
-		'.tga' {
+		'tga' {
 			stbi.stbi_write_tga(path, img.width, img.height, img.nr_channels, img.data)!
 		}
-		'.bmp' {
+		'bmp' {
 			stbi.stbi_write_bmp(path, img.width, img.height, img.nr_channels, img.data)!
 		}
 		else {
