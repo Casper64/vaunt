@@ -1,0 +1,10 @@
+<picture>
+    @if url_small != ''
+    <source media="(max-width: 640px)" srcset="@url_small">
+    @endif
+    @if url_medium  != ''
+    <source media="(max-width: 1280px)" srcset="@url_medium">
+    @endif
+    <source media="(min-width: 1281px)" srcset="@url">
+    <img src="@url" alt="@alt"/>
+</picture>

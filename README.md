@@ -20,7 +20,7 @@ contain any code used in this repository.
 - The CMS backend is optional
 - Admin panel and visual block editor for content creation
 - User configurable themes
-- Image uploads
+- Image uploads automatically generate small, medium and large sizes
 
 See [only use static generator](#only-static-generator) if you only want to convert your vweb 
 application into a static website and don't need the admin panel.
@@ -572,6 +572,11 @@ pub fn (u &Util) article_html(article_name string, template_dir string) !vweb.Ra
 
 // category_article_html returns the html for that article with category
 pub fn (u &Util) category_article_html(category_name string, article_name string, template_dir string) !vweb.RawHtml
+
+// html_picture_from_article_thumbnail returns a `<picture>` tag containing the different
+// sizes of the articles thumbnail, if they exist.
+// usage: `@{app.html_picture_from_article_thumbnail(article)}`
+pub fn (u &Util) html_picture_from_article_thumbnail(article Article) vweb.RawHtml 
 ```
 
 #### Vweb Config

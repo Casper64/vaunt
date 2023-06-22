@@ -49,6 +49,29 @@ pub fn (u &Util) category_article_html(category_name string, article_name string
 	return os.read_file(article_file)!
 }
 
+// html_picture_from_article_thumbnail returns a `<picture>` tag containing the different
+// sizes of the articles thumbnail, if they exist
+pub fn (u &Util) html_picture_from_article_thumbnail(article Article) vweb.RawHtml {
+	if article.thumbnail == 0 {
+		return ''
+	}
+
+	return u.html_picture_from_image(article.thumbnail)
+}
+
+// html_picture_from_image returns a `<picture>` tag containing the different
+//  sizes of the image, if they exist
+pub fn (u &Util) html_picture_from_image(img_id int) vweb.RawHtml {
+	img := sql u.db {
+		select from Image where id == img_id
+	} or { return '' }
+	if img.len == 0 {
+		return ''
+	}
+
+	return get_html_picture_from_src(img[0].src, '[${img[0].name}]')
+}
+
 pub fn (u &Util) get_all_articles() []Article {
 	return get_all_articles(u.db)
 }

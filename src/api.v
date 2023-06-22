@@ -8,6 +8,13 @@ import net.html
 import os
 import time
 import json
+import stbi
+
+pub const (
+	resizable_image_mimes = ['.png', '.jpg', '.jpeg', '.tga', '.bmp']
+	small_image_size      = 640
+	medium_image_size     = 1280
+)
 
 pub struct Api {
 	vweb.Context
@@ -370,12 +377,7 @@ fn (mut app Api) upload_image(article_id int, file_key string, img_name string) 
 
 	replaced_name := img_name.replace('\r', '')
 
-	os.mkdir_all(img_dir)!
-	file_path := os.join_path(img_dir, replaced_name)
-
-	mut f := os.create(file_path)!
-	f.write(fdata)!
-	f.close()
+	upload_resized_images_from(fdata, replaced_name, img_dir)!
 
 	upload_path := '/uploads/img/${replaced_name}'
 	img := Image{
@@ -788,6 +790,14 @@ fn (mut app Api) delete_image_file(article_id int, file_path string) ! {
 	}
 	if os.exists(file_path) {
 		os.rm(file_path)!
+
+		// Also remove the image from the `small` and `medium` directory
+		// ignore any errors since we don't know if the images will exist
+		name := os.file_name(file_path)
+		path_small := os.dir(file_path) + '/small/' + name
+		path_medium := os.dir(file_path) + '/medium/' + name
+		os.rm(path_small) or {}
+		os.rm(path_medium) or {}
 	} else {
 		return error('image "${file_path}" does not exist')
 	}
@@ -893,4 +903,96 @@ fn get_publish_paths(db pg.DB, template_dir string, article &Article) !(string, 
 	file_path = sanitize_path(file_path)
 	article_path = sanitize_path(article_path)
 	return file_path, article_path
+}
+
+// upload_resized_images_from writes 3 images to `img_dir`: one small sized
+// one medium sized and one full-sized if the image is large enough to allow 3 sizes.
+fn upload_resized_images_from(fdata []u8, name string, img_dir string) ! {
+	os.mkdir_all(img_dir)!
+
+	ext := os.file_ext(name)
+
+	// full sized image
+	file_path := os.join_path(img_dir, name)
+	mut f := os.create(file_path)!
+	f.write(fdata)!
+	f.close()
+
+	// check if the file extension is supported for write
+	if ext !in vaunt.resizable_image_mimes {
+		return
+	}
+
+	img := stbi.load(file_path, desired_channels: 0)!
+
+	println('file info: w:${img.width} h:${img.height} c:${img.nr_channels}')
+	// get minimum width/height to determine orientation
+	landscape := img.width >= img.height
+
+	mut new_width, mut new_height := 0, 0
+
+	// small image
+	if (landscape && img.width <= vaunt.small_image_size)
+		|| (!landscape && img.height <= vaunt.small_image_size) {
+		// image is already at full size
+		return
+	}
+	small_file_path := os.join_path(img_dir, 'small', name)
+	os.mkdir_all(os.join_path(img_dir, 'small'))!
+
+	if landscape {
+		new_width = vaunt.small_image_size
+		new_height = int(f32(new_width) / f32(img.width) * f32(img.height))
+	} else {
+		new_height = vaunt.small_image_size
+		new_width = int(f32(new_height) / f32(img.height) * f32(img.width))
+	}
+
+	sm_img := stbi.resize_uint8(img, new_width, new_height)!
+	stbi_write_ext(sm_img, small_file_path)!
+
+	// medium image
+	if (landscape && img.width <= vaunt.medium_image_size)
+		|| (!landscape && img.height <= vaunt.medium_image_size) {
+		// image is already at full size
+		return
+	}
+	medium_file_path := os.join_path(img_dir, 'medium', name)
+	os.mkdir_all(os.join_path(img_dir, 'medium'))!
+
+	if landscape {
+		new_width = vaunt.medium_image_size
+		new_height = int(f32(new_width) / f32(img.width) * f32(img.height))
+	} else {
+		new_height = vaunt.medium_image_size
+		new_width = int(f32(new_height) / f32(img.height) * f32(img.width))
+	}
+
+	md_img := stbi.resize_uint8(img, new_width, new_height)!
+	stbi_write_ext(md_img, medium_file_path)!
+}
+
+// stbi_write_ext calls the right `stbi_write_*` function for each file extension and
+// returns an error if the file extension is unsupported.
+fn stbi_write_ext(img &stbi.Image, path string) ! {
+	match img.ext {
+		'png' {
+			stbi.stbi_write_png(path, img.width, img.height, img.nr_channels, img.data,
+				img.width * 4)!
+		}
+		'jpeg', 'jpg' {
+			println('write jpeg')
+			stbi.stbi_write_jpg(path, img.width, img.height, img.nr_channels, img.data,
+				100)!
+		}
+		'tga' {
+			stbi.stbi_write_tga(path, img.width, img.height, img.nr_channels, img.data)!
+		}
+		'bmp' {
+			stbi.stbi_write_bmp(path, img.width, img.height, img.nr_channels, img.data)!
+		}
+		else {
+			return error('image extension is not recognized!')
+		}
+	}
 }
