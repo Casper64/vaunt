@@ -303,6 +303,30 @@ Including all static files.
 v run [project] --generate
 ```
 
+### Correct URL's
+
+Typically, you would write a link to another page in vweb like this:
+```html
+<a href="/my-page">My page</a>
+```
+
+But when the website is generated the link breaks, because browsers expect html files. 
+To fix this you can use the `url` method on `vaunt.Util`. This method adds `.html` after 
+the passed route when the app is being generated.
+
+**Example:**
+```html
+<a href=@{app.url('/my-page')}>My page</a>
+```
+
+> **Note**
+> Don't add the quotes `""` in the href attribute!
+
+**Result:**
+```html
+<a href="/my-page.html">My page</a>
+```
+
 ## Search Engine Optimization (SEO)
 
 SEO is used to place your website higher in the rankings of search engines like google.
@@ -563,6 +587,10 @@ templates, except for the functions that return a `Result` type.
 #### Templates
 
 ```v
+// url adds '.html' after the url if the site is being generated
+// usage: `href=@{app.url('/my-page')}`
+pub fn (u &Util) url(url string) vweb.RawHtml
+
 // get the correct url in your templates
 // usage: `@{app.article_url(article)}`
 pub fn (u &Util) article_url(article Article) string

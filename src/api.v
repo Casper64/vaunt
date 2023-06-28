@@ -621,15 +621,15 @@ pub fn (mut app Api) fetch_link() vweb.Result {
 	mut document := html.parse(res_str)
 	link_data.success = 1
 
-	title_tag := document.get_tag_by_attribute_value('property', 'og:title')
+	title_tag := document.get_tags_by_attribute_value('property', 'og:title')
 	if title_tag.len > 0 {
 		link_data.meta.title = title_tag[0].attributes['content']
 	}
-	description_tag := document.get_tag_by_attribute_value('property', 'og:description')
+	description_tag := document.get_tags_by_attribute_value('property', 'og:description')
 	if description_tag.len > 0 {
 		link_data.meta.description = description_tag[0].attributes['content']
 	}
-	image_tag := document.get_tag_by_attribute_value('property', 'og:image')
+	image_tag := document.get_tags_by_attribute_value('property', 'og:image')
 	if image_tag.len > 0 {
 		link_data.meta.image.url = image_tag[0].attributes['content']
 	}

@@ -44,7 +44,7 @@ const router = createRouter({
             }
         }, {
             path: '/admin/create-markdown',
-            name: 'create',
+            name: 'createmd',
             component: CreateMarkdownView,
             async beforeEnter(to, from, next) {
                 const categoryStore = useCategoryStore()

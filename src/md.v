@@ -13,7 +13,7 @@ pub fn get_blocks_from_markdown(md string) []Block {
 		'').replace('<script', '&lt;script')
 	md_html := '<html><body>${markdown.to_html(sanitized)}</body></html>'
 	doc := html.parse(md_html)
-	elements := doc.get_tag('body')[0].children.clone()
+	elements := doc.get_tags(name: 'body')[0].children.clone()
 	blocks := generate_blocks(elements)
 	return blocks
 }

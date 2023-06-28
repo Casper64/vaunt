@@ -1,260 +1,418 @@
 module vaunt
 
-import json
-import net.urllib
+import time
 import os
 import vweb
+import net.http
 
-// 			Generate Block Html
-// =======================================
-
-pub struct Block {
-pub:
-	id         string
-	block_type string [json: 'type']
-	data       string [required]
+// These interfaces are used to make using these methods optional to the user
+interface AppWithTemplateDir {
+	template_dir string
 }
 
-pub fn generate(data string) string {
-	blocks := json.decode([]Block, data) or { []Block{} }
+interface AppWithUploadDir {
+	upload_dir string
+}
 
-	mut html := ''
+interface AppWithTagPage {
+mut:
+	tag_page(string) vweb.Result
+}
 
-	for block in blocks {
-		html += match block.block_type {
-			'heading' {
-				generate_heading(block)
-			}
-			'paragraph' {
-				generate_paragraph(block)
-			}
-			'linkTool' {
-				generate_link(block)
-			}
-			'image' {
-				generate_image(block)
-			}
-			'embed' {
-				generate_embed(block)
-			}
-			'quote' {
-				generate_quote(block)
-			}
-			'table' {
-				generate_table(block)
-			}
-			'code' {
-				generate_code(block)
-			}
-			'list' {
-				generate_list(block)
-			}
-			else {
-				''
+interface AppWithArticlePage {
+mut:
+	article_page(string) vweb.Result
+}
+
+interface AppWithArticleCategoryPage {
+mut:
+	category_article_page(string, string) vweb.Result
+}
+
+interface AppWithUtilUrl {
+	url(string) vweb.RawHtml
+mut:
+	dev bool
+}
+
+fn start_site_generation[T](mut app T, output_dir string) ! {
+	println('[Vaunt] Starting site generation into "${output_dir}"...')
+
+	start := time.ticks()
+
+	// the output directory's path
+	dist_path := os.abs_path(output_dir)
+
+	// clear old dir
+	if os.exists(dist_path) {
+		os.rmdir_all(dist_path)!
+	}
+	os.mkdir_all(dist_path)!
+
+	// copy static files
+	for static_file, static_path in app.static_files {
+		// ignore trailing "/" in static files
+		static_out_path := os.join_path(dist_path, static_file.all_after_first('/'))
+		os.mkdir_all(os.dir(static_out_path))!
+		os.cp(static_path, static_out_path)!
+	}
+
+	$if T is AppWithUploadDir {
+		// copy upload dir
+		upload_path := os.join_path(dist_path, os.base(app.upload_dir))
+		os.mkdir(upload_path)!
+		os.cp_all(app.upload_dir, upload_path, true)!
+	}
+
+	$if T is AppWithUtilUrl {
+		app.Util.dev = false
+	}
+
+	println('[Vaunt] Generating custom pages...')
+
+	// get initial SEO
+	mut initial_seo := SEO{}
+	$if T is SEOInterface {
+		initial_seo = app.seo
+	}
+	mut urls := []string{}
+
+	app.before_request()
+
+	mut routes := []string{}
+	$for method in T.methods {
+		$if method.return_type is vweb.Result {
+			routes << method.name
+
+			// validate routes
+			if method.name == 'article_page' {
+				if method.attrs.any(it.starts_with('/articles/:')) == false {
+					eprintln('[Vaunt] Error: expecting method "article_page" to be a dynamic route that starts with "/articles/"${std_err_msg}')
+					return
+				}
+			} else if method.name == 'category_article_page' {
+				if method.attrs.any(it.starts_with('/articles/:')) == false {
+					eprintln('[Vaunt] Error: expecting method "category_article_page" to be a dynamic route that starts with "/articles/"${std_err_msg}')
+					return
+				}
+			} else if method.name == 'tag_page' {
+				if method.attrs.any(it.starts_with('/tags/:')) == false {
+					eprintln('[Vaunt] Error: expecting method "tag_page" to be a dynamic route that starts with "/tags/"${std_err_msg}')
+					return
+				}
+			} else if method.attrs.any(it.contains(':')) {
+				eprintln('error while generating "${method.name}": generating custom dynamic routes is not supported yet!')
+			} else if method.name != 'not_found' && validate_route_http_method(method.attrs) {
+				i_start := time.ticks()
+
+				mut route := method.name
+				mut url := '/${route}'
+
+				// get route name from attributes if any
+				for attr in method.attrs {
+					if attr.starts_with('/') == false {
+						continue
+					}
+					route = method.attrs[0]
+
+					// add index pages for routes like "/" -> "index.html" or "/pages/" -> "pages/index.html
+					url = route
+					if route.ends_with('/') {
+						route += 'index'
+					}
+
+					// skip leading "/"
+					route = route[1..]
+				}
+
+				output_file := '${route}.html'
+				urls << output_file
+
+				file_path := os.join_path(dist_path, output_file)
+
+				// make dirs for nested routes
+				os.mkdir_all(os.dir(file_path))!
+
+				// change app.req.url according to the current route
+				app.Context = vweb.Context{
+					...app.Context
+					req: http.Request{
+						...app.Context.req
+						url: url
+					}
+				}
+
+				// run method, resulting html should be in `app.s_html`
+				app.$method()
+				if verify_app_method_result(mut app, method.name) {
+					mut index_f := os.create(file_path)!
+					index_f.write(app.s_html.bytes())!
+					index_f.close()
+
+					// reset app
+					app.s_html = ''
+					$if T is SEOInterface {
+						app.seo = initial_seo
+					}
+
+					i_end := time.ticks()
+					println('[Vaunt] Generated page "${output_file}" in ${i_end - i_start}ms')
+				}
 			}
 		}
 	}
-	return html
-}
-
-pub struct HeadingData {
-pub:
-	text  string
-	level int
-}
-
-pub fn generate_heading(block &Block) string {
-	data := json.decode(HeadingData, block.data) or { HeadingData{} }
-	id_name := sanitize_path(data.text)
-
-	if data.level == 1 {
-		return $tmpl('./templates/blocks/h1.html')
-	} else if data.level == 2 {
-		return $tmpl('./templates/blocks/h2.html')
-	} else if data.level == 3 {
-		return $tmpl('./templates/blocks/h3.html')
-	} else {
-		return ''
-	}
-}
-
-pub struct ParagraphData {
-pub:
-	text string
-}
-
-pub fn generate_paragraph(block &Block) string {
-	data := json.decode(ParagraphData, block.data) or { ParagraphData{} }
-	return $tmpl('./templates/blocks/p.html')
-}
-
-pub fn generate_link(block &Block) string {
-	data := json.decode(LinkData, block.data) or { LinkData{} }
-	url := urllib.parse(data.link) or { urllib.URL{} }
-	anchor := '${url.scheme}://${url.host}'
-
-	return $tmpl('./templates/blocks/link.html')
-}
-
-pub struct ImageData {
-pub:
-	caption string
-	file    map[string]string
-}
-
-pub fn generate_image(block &Block) string {
-	data := json.decode(ImageData, block.data) or { ImageData{} }
-
-	mut url := data.file['url']
-
-	// properties for the html `picture` `srcset`.
-	mut url_small, mut url_medium := '', ''
-
-	name := os.file_name(url)
-	alt := if data.caption != '' { '[${data.caption}]' } else { '[${name}]' }
-
-	if url.starts_with('http://127.0.0.1') || url.starts_with('http://localhost') {
-		// image is local
-		url_s := urllib.parse(data.file['url']) or { urllib.URL{} }
-		url = url_s.path
-
-		url_small = os.dir(url) + '/small/' + name
-		url_medium = os.dir(url) + '/medium/' + name
-
-		wd := os.getwd()
-		// check if the small and medium image path exist
-		if os.exists(os.join_path(wd, url_small[1..])) == false {
-			url_small = ''
+	$if T is AppWithTemplateDir {
+		// articles
+		$if T is AppWithArticlePage || T is AppWithArticleCategoryPage {
+			println('[Vaunt] Generating article pages...')
+			urls << generate_articles(mut app, dist_path) or { panic(err) }
 		}
-		if os.exists(os.join_path(wd, url_medium[1..])) == false {
-			url_medium = ''
+
+		// tags
+		$if T is AppWithTagPage {
+			println('[Vaunt] Generating tag pages...')
+			urls << generate_tags(mut app, dist_path) or { panic(err) }
 		}
 	}
 
-	picture := get_html_picture_from_src(url, alt)
+	// sitemap.xml
+	$if T is SEOInterface {
+		println('[Vaunt] Generating sitemap.xml...')
 
-	return $tmpl('./templates/blocks/img.html')
-}
+		if app.seo.website_url == '' {
+			println('warning: `SEO.website_url` is not set! Skipping sitemap.xml')
+		} else {
+			mut sitemap_urls := [app.seo.website_url]
+			for url in urls {
+				if url == 'index.html' {
+					continue
+				}
 
-// get_html_picture_from_url returns a `picture` html element containing 3
-// sizes of the image: small (640px), medium (1280px) and full-size, if they exist
-// in the `uploads` folder.
-pub fn get_html_picture_from_src(url string, alt string) vweb.RawHtml {
-	// properties for the html `picture` `srcset`.
-	mut url_small, mut url_medium := '', ''
+				mut website_url := app.seo.website_url
+				if app.seo.website_url.ends_with('/') == false {
+					// make sure the full url has a '/' after the website name
+					website_url += '/'
+				}
 
-	name := os.file_name(url)
-	url_small = os.dir(url) + '/small/' + name
-	url_medium = os.dir(url) + '/medium/' + name
+				sitemap_urls << website_url + url
+			}
+			sitemap := generate_sitemap(sitemap_urls)
 
-	wd := os.getwd()
-	// check if the small and medium image path exist
-	if os.exists(os.join_path(wd, url_small[1..])) == false {
-		url_small = ''
-	}
-	if os.exists(os.join_path(wd, url_medium[1..])) == false {
-		url_medium = ''
-	}
-
-	return $tmpl('./templates/blocks/picture.html')
-}
-
-pub struct EmbedData {
-pub:
-	service string
-	source  string [skip]
-	embed   string
-	width   int
-	height  int
-	caption string
-}
-
-pub fn generate_embed(block &Block) string {
-	data := json.decode(EmbedData, block.data) or { EmbedData{} }
-	return $tmpl('./templates/blocks/embed.html')
-}
-
-pub struct QuoteData {
-pub:
-	text    string
-	caption string
-}
-
-pub fn generate_quote(block &Block) string {
-	data := json.decode(QuoteData, block.data) or { QuoteData{} }
-	return $tmpl('./templates/blocks/quote.html')
-}
-
-pub struct TableData {
-pub mut:
-	with_headings bool       [json: withHeadings]
-	content       [][]string
-}
-
-pub fn generate_table(block &Block) string {
-	mut data := json.decode(TableData, block.data) or { TableData{} }
-
-	mut table_headers := []string{}
-	if data.with_headings {
-		table_headers = data.content[0]
-		data.content.delete(0)
+			mut f := os.create(os.join_path(dist_path, 'sitemap.xml'))!
+			f.write_string(sitemap)!
+			f.close()
+		}
 	}
 
-	table_rows := data.content
+	end := time.ticks()
 
-	return $tmpl('./templates/blocks/table.html')
+	println('[Vaunt] Done! Outputted your website to "${output_dir}" in ${end - start}ms')
 }
 
-pub struct CodeData {
-pub:
-	language string
-pub mut:
-	code string
-}
-
-pub fn generate_code(block &Block) string {
-	mut data := json.decode(CodeData, block.data) or { CodeData{} }
-
-	// escape html tags
-	data.code = data.code.replace('<', '&lt;')
-	data.code = data.code.replace('>', '&gt;')
-
-	lang_class := 'language-${data.language.to_lower()}'
-
-	return $tmpl('./templates/blocks/code.html')
-}
-
-pub struct ListData {
-pub mut:
-	style string
-	items []ListItem
-}
-
-pub struct ListItem {
-pub mut:
-	content string
-	items   []ListItem
-}
-
-fn generate_li(data ListItem, list_type string) string {
-	if data.items.len > 0 {
-		lis := data.items.map(fn [list_type] (item ListItem) string {
-			return generate_li(item, list_type)
-		})
-
-		return '<li>${data.content}\n<${list_type}>${lis.join_lines()}</${list_type}></li>'
-	} else {
-		return '<li>${data.content}</li>'
+fn generate_articles[T](mut app T, dist_path string) ![]string {
+	$if T !is DbInterface {
+		return error('App does not have a "db" field!')
 	}
+	$if T !is AppWithTemplateDir {
+		return error('App does not have a "template_dir" field!')
+	}
+
+	articles_path := os.join_path(dist_path, 'articles')
+	os.mkdir(articles_path)!
+
+	// all urls for the articles
+	mut urls := []string{}
+
+	// get initial SEO
+	mut initial_seo := SEO{}
+	$if T is SEOInterface {
+		initial_seo = app.seo
+	}
+
+	mut articles := get_all_articles(app.db)
+	for article in articles {
+		if article.show == false {
+			continue
+		}
+		a_start := time.ticks()
+
+		// generate the article html
+		file_art := generate(article.block_data)
+
+		file_path, mut article_path := get_publish_paths(app.db, app.template_dir, article) or {
+			eprintln('warning: category of article "${article.name}" does not exist!')
+			continue
+		}
+
+		// change app.req.url according to the current route
+		current_url := '/articles/${article_path}'
+		app.Context = vweb.Context{
+			...app.Context
+			req: http.Request{
+				...app.Context.req
+				url: current_url
+			}
+		}
+
+		// create all directories for the category
+		os.mkdir_all(os.dir(file_path)) or { return error('file "${file_path}" is not writeable') }
+
+		mut f_art := os.create(file_path) or {
+			return error('file "${file_path}" is not writeable')
+		}
+		f_art.write_string(file_art) or {
+			return error('could not write file "${article.name}.html"')
+		}
+		f_art.close()
+
+		// get html
+		article_path += '.html'
+		urls << 'articles/${article_path}'
+
+		article_file_path := os.join_path(articles_path, article_path)
+		os.mkdir_all(os.dir(article_file_path))!
+
+		mut method_name := 'article_page'
+
+		// no category
+		article_name := sanitize_path(article.name)
+		if article.category_id == 0 {
+			$if T is AppWithArticlePage {
+				app.article_page(article_name)
+			} $else {
+				eprintln('[Vaunt] Error: can\'t generate html for article "${article.name}" since the method `article_page` does not exists!\nSee the docs for more information on required methods.')
+				continue
+			}
+		} else {
+			category := get_category_by_id(app.db, article.category_id)!
+			category_name := sanitize_path(category.name)
+			method_name = 'category_article_page'
+
+			$if T is AppWithArticleCategoryPage {
+				app.category_article_page(category_name, article_name)
+			} $else {
+				eprintln('[Vaunt] Error: can\'t generate html for article "${article.name}" since the article has a category and the method `category_article_page` does not exists!\nSee the docs for more information on required methods.')
+				continue
+			}
+		}
+
+		if verify_app_method_result(mut app, '${method_name} (article_name=${article.name})') == false {
+			continue
+		}
+
+		mut f := os.create(article_file_path)!
+		f.write(app.s_html.bytes())!
+		f.close()
+
+		// reset app
+		app.s_html = ''
+		$if T is SEOInterface {
+			app.seo = initial_seo
+		}
+
+		a_end := time.ticks()
+		println('[Vaunt] Generated article "${article.name}" in ${a_end - a_start}ms')
+	}
+
+	return urls
 }
 
-pub fn generate_list(block &Block) string {
-	mut data := json.decode(ListData, block.data) or { ListData{} }
+fn generate_tags[T](mut app T, dist_path string) ![]string {
+	$if T !is DbInterface {
+		return error('App does not have a "db" field!')
+	}
 
-	list_type := if data.style == 'ordered' { 'ol' } else { 'ul' }
-	lis := data.items.map(fn [list_type] (item ListItem) string {
-		return generate_li(item, list_type)
-	})
+	tags_path := os.join_path(dist_path, 'tags')
+	os.mkdir(tags_path)!
 
-	return '<${list_type}>${lis.join_lines()}</${list_type}>'
+	// all urls for the articles
+	mut urls := []string{}
+
+	// get initial SEO
+	mut initial_seo := SEO{}
+	$if T is SEOInterface {
+		initial_seo = app.seo
+	}
+
+	tags := get_all_tags(app.db)
+	for tag in tags {
+		t_start := time.ticks()
+
+		mut tag_path := sanitize_path(tag.name)
+		tag_file_path := os.join_path(tags_path, '${tag_path}.html')
+
+		// change app.req.url according to the current route
+		current_url := '/tags/${tag_path}'
+		app.Context = vweb.Context{
+			...app.Context
+			req: http.Request{
+				...app.Context.req
+				url: current_url
+			}
+		}
+
+		// get html
+		tag_path += '.html'
+		urls << 'tags/${tag_path}'
+		app.tag_page(tag.name)
+		if verify_app_method_result(mut app, 'tag_page (name=${tag.name})') == false {
+			continue
+		}
+
+		if app.s_html.len == 0 {
+			eprintln('warning: tag "${tag.name}" produced no html! Did you forget to set `app.s_html`? Skipping output')
+			continue
+		}
+
+		mut f := os.create(tag_file_path)!
+		f.write(app.s_html.bytes())!
+		f.close()
+
+		// reset app
+		app.s_html = ''
+		$if T is SEOInterface {
+			app.seo = initial_seo
+		}
+
+		t_end := time.ticks()
+		println('[Vaunt] Generated tag page "${tag.name}" in ${t_end - t_start}ms')
+	}
+
+	return urls
+}
+
+// verify_app_method_result checks if the app route returned a valid result. Only 200 status
+// codes and no empty values of `s_html`
+fn verify_app_method_result[T](mut app T, method_name string) bool {
+	defer {
+		app.status = '200 OK'
+	}
+	if app.status.starts_with('200') == false {
+		eprintln('warning: method "${method_name}" returned non-200 status! Skipping...')
+		return false
+	} else if app.s_html.len == 0 {
+		eprintln('warning: method "${method_name}" produced no html! Did you forget to set `app.s_html`?')
+		return false
+	}
+
+	return true
+}
+
+fn validate_route_http_method(attrs []string) bool {
+	if attrs.len == 0 {
+		return true
+	}
+
+	mut methods := []string{}
+	for attr in attrs {
+		if attr.starts_with('/') {
+			continue
+		}
+		methods << attr.to_upper()
+	}
+	if methods.len != 0 && 'GET' !in methods {
+		return false
+	}
+
+	return true
 }
