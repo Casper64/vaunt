@@ -41,7 +41,7 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
                 class: Header,
                 config: {
                     defaultLevel: 2,
-                    levels: [1,2,3]
+                    levels: [1,2,3,4,5,6]
                 }
             },
             paragraph: {
@@ -84,8 +84,6 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
                     }
                 }
             },
-            // TODO: lists will nest in a JSON structure, will enable lists when V
-            // supports recursive structs.
             list: {
                 class: NestedList,
                 inlineToolbar: true,

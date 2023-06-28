@@ -7,6 +7,8 @@ import os
 type SkipGenerationResult = vweb.Result
 
 pub struct Util {
+mut:
+	dev bool = true
 pub:
 	skip_generation SkipGenerationResult
 pub mut:
@@ -18,15 +20,15 @@ pub mut:
 
 // get the correct url in your templates
 // // usage: `@{app.article_url(article)}`
-pub fn (u &Util) article_url(article Article) string {
+pub fn (u &Util) article_url(article Article) vweb.RawHtml {
 	if article.category_id != 0 {
 		category := get_category_by_id(u.db, article.category_id) or { return '' }
 		url := '/articles/${category.name}/${article.name}'
-		return sanitize_path(url)
+		return sanitize_path(u.url(url))
 	}
 
 	url := '/articles/${article.name}'
-	return sanitize_path(url)
+	return sanitize_path(u.url(url))
 }
 
 // article_html returns the html for that article
@@ -70,6 +72,19 @@ pub fn (u &Util) html_picture_from_image(img_id int) vweb.RawHtml {
 	}
 
 	return get_html_picture_from_src(img[0].src, '[${img[0].name}]')
+}
+
+// url adds '.html' after the url if the site is being generated
+// usage: `href=@{app.url('/my-page')}`
+pub fn (u &Util) url(url string) vweb.RawHtml {
+	if u.dev {
+		return '${url}'
+	} else {
+		if url.ends_with('/') {
+			return '"${url}index.html"'
+		}
+		return '"${url}.html"'
+	}
 }
 
 pub fn (u &Util) get_all_articles() []Article {

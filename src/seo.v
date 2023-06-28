@@ -104,12 +104,27 @@ pub fn (mut seo SEO) set_article(article &Article, url string) {
 
 // set_url sets the OG url with `website_url` as prefix
 pub fn (mut seo SEO) set_url(url string) {
+	if url == '' {
+		seo.og.url = seo.website_url
+		return
+	}
+
 	if seo.website_url.ends_with('/') {
 		// url starts with a '/'
 		seo.og.url = seo.website_url + url[1..]
 	} else {
 		// don't let urls end with a '/'
 		seo.og.url = seo.website_url + url
+	}
+}
+
+// set_image_url sets the OG image_url for an image with name `img_name`
+pub fn (mut seo SEO) set_image_url(img_name string) {
+	if seo.website_url.ends_with('/') {
+		seo.og.image_url = seo.website_url + 'uploads/img/${img_name}'
+	} else {
+		// don't let urls end with a '/'
+		seo.og.image_url = seo.website_url + '/uploads/img/${img_name}'
 	}
 }
 

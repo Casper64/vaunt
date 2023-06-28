@@ -26,6 +26,10 @@ const name = computed(() => {
     return name
 })
 
+const text = computed(() => {
+    return props.block.data.text
+})
+
 </script>
 
 <template>
@@ -33,7 +37,8 @@ const name = computed(() => {
     <div class="block-icon">
         <img class="block-icon" :src="icon">
     </div>
-    <p class="block-name">{{ name }}</p>
+    <!-- <p class="block-name">{{ name }}</p> -->
+    <p class="block-text">{{ text }}</p>
 </div>
 </template>
 
@@ -62,6 +67,11 @@ const name = computed(() => {
 
     .block-icon {
         height: 35px;
+    }
+
+    .block-text {
+        text-overflow: ellipsis;
+        overflow: hidden;
     }
 }
 
