@@ -316,7 +316,7 @@ the passed route when the app is being generated.
 
 **Example:**
 ```html
-<a href=@{app.url('/my-page')}>My page</a>
+<a href="@{app.url('/my-page')}">My page</a>
 ```
 
 > **Note**
@@ -588,11 +588,11 @@ templates, except for the functions that return a `Result` type.
 
 ```v
 // url adds '.html' after the url if the site is being generated
-// usage: `href=@{app.url('/my-page')}`
+// usage: `href="@{app.url('/my-page')}"`
 pub fn (u &Util) url(url string) vweb.RawHtml
 
 // get the correct url in your templates
-// usage: `@{app.article_url(article)}`
+// usage: `href="@{app.article_url(article)}"`
 pub fn (u &Util) article_url(article Article) string
 
 // article_html returns the html for that article
