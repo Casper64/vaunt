@@ -436,7 +436,6 @@ pub fn (mut app Api) save_blocks() vweb.Result {
 	article_id := app.query['article'].int()
 	sql app.db {
 		update Article set block_data = app.req.data where id == article_id
-		update Article set updated_at = time.now() where id == article_id
 	} or {
 		app.set_status(500, '')
 		return app.text('error: could not update article')
@@ -657,6 +656,7 @@ pub fn (mut app Api) publish_article() vweb.Result {
 	// change visibility
 	sql app.db {
 		update Article set show = true where id == article_id
+		update Article set updated_at = time.now() where id == article_id
 	} or {
 		app.set_status(500, '')
 		return app.text('error: could not update article, please try again later')
