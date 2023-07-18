@@ -14,6 +14,10 @@ const route = useRoute()
 const complete = ref(false)
 const errorMessage = ref('')
 
+const props = defineProps<{
+    insideEditor?: boolean
+}>();
+
 const article = computed(() => {
     return store.get(route.params['id'])!
 })
@@ -32,7 +36,7 @@ async function submitHandler(data: CreateArticle) {
             thumbnailSource.value = BASE_URL+new_article.image_src
         }
 
-        if (success) {
+        if (success && props.insideEditor) {
             const blockStore = useBlockStore()
             
             // first block will never be changed since it contains the article name

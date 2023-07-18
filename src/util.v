@@ -162,7 +162,7 @@ pub fn get_category_by_id(db pg.DB, category_id int) !Category {
 // get all articles
 pub fn get_all_articles(db pg.DB) []Article {
 	mut articles := sql db {
-		select from Article order by created_at desc
+		select from Article order by updated_at desc
 	} or { []Article{} }
 
 	for mut article in articles {
@@ -177,7 +177,7 @@ pub fn get_all_articles(db pg.DB) []Article {
 // get all articles by category id
 pub fn get_all_articles_by_category(db pg.DB, category int) []Article {
 	mut articles := sql db {
-		select from Article where category_id == category order by created_at desc
+		select from Article where category_id == category order by updated_at desc
 	} or { []Article{} }
 
 	for mut article in articles {

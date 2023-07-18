@@ -15,7 +15,7 @@ import ArticleEditor from '@/components/blocks/ArticleEditor.vue'
         <BlocksPreview/>
         
     </div>
-    <ArticleEditor/>
+    <ArticleEditor inside-editor/>
 </div>
 </template>
 
