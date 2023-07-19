@@ -2,7 +2,7 @@ import os
 import time
 import json
 import net.http
-import db.pg
+import db.sqlite
 import vaunt
 import stbi
 
@@ -12,9 +12,7 @@ const (
 	exit_after_time = 12000 // milliseconds
 	vexe            = os.getenv('VEXE')
 	serverexe       = os.join_path(os.cache_dir(), 'vaunt_test_server.exe')
-	db_user         = 'dev'
-	db_password     = 'password'
-	db_name         = 'vaunt-test'
+	db_file         = os.join_path(os.cache_dir(), 'vaunt_api_test.db')
 
 	vaunt_username  = 'admin'
 	jwt_token       = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwIiwibmFtZSI6ImFkbWluIiwiaWF0IjoxNjg0MDkwMTgwfQ.OJvgvMZ2uS6odHQ6vfp9zMnV765ssH4bjcppDKUxS9k'
@@ -31,15 +29,9 @@ fn testsuite_begin() {
 	if os.exists('tests/uploads/img') {
 		os.rmdir_all('tests/uploads/img')!
 	}
-}
-
-fn test_setup_database() {
-	mut db := get_connection() or { panic(err) }
-	db.drop('categories') or {}
-	db.drop('articles') or {}
-	db.drop('images') or {}
-	db.drop('users') or {}
-	db.drop('tags') or {}
+	if os.exists(db_file) {
+		os.rm(db_file) or {}
+	}
 }
 
 fn test_vaunt_app_can_be_compiled() {
@@ -53,7 +45,7 @@ fn test_vaunt_runs_in_background() {
 	$if !windows {
 		suffix = ' > /dev/null &'
 	}
-	server_exec_cmd := '${os.quoted_path(serverexe)} ${sport} ${exit_after_time} ${db_user} ${db_password} ${db_name} ${suffix}'
+	server_exec_cmd := '${os.quoted_path(serverexe)} ${sport} ${exit_after_time} ${db_file} ${suffix}'
 	$if windows {
 		spawn os.system(server_exec_cmd)
 	} $else {
@@ -213,14 +205,15 @@ fn test_delete_article_with_image() {
 	assert x.status() == .bad_request
 	assert x.body == 'error: "id" is not a number'
 
-	x = do_get('http://${localserver}/api/articles/3') or { panic(err) }
+	// postgresql continues counting id's. sqlite not so id is 2 instead of 3
+	x = do_get('http://${localserver}/api/articles/2') or { panic(err) }
 	article := json.decode(vaunt.Article, x.body) or { panic(err) }
 	assert article.image_src != ''
 
 	// last article id is 3
-	x = do_delete('http://${localserver}/api/articles/3') or { panic(err) }
+	x = do_delete('http://${localserver}/api/articles/2') or { panic(err) }
 	assert x.status() == .ok
-	assert x.body == 'deleted article with id 3'
+	assert x.body == 'deleted article with id 2'
 
 	image_path := os.join_path('tests', article.image_src)
 	assert os.exists(image_path) == false
@@ -469,7 +462,7 @@ fn test_upload_image() {
 
 	mut db := get_connection() or { panic(err) }
 	// img id should be 4
-	image := vaunt.get_image(db, 4) or {
+	image := vaunt.get_image(db, 3) or {
 		assert err.msg() == ''
 		vaunt.Image{}
 	}
@@ -619,20 +612,20 @@ fn test_get_tags() {
 fn test_add_tag_to_article() {
 	article := create_article('with tag', 'tagz', '{}')!
 	eprintln("note to self: check article id's again!")
-	assert article.id == 8
+	assert article.id == 6
 
 	mut form := map[string]string{}
 
-	mut x := do_post_form('http://${localserver}/api/tags/8', form)!
+	mut x := do_post_form('http://${localserver}/api/tags/6', form)!
 	assert x.status() == .bad_request
 
 	// tag does not exist
 	form['tag_id'] = '2'
-	x = do_post_form('http://${localserver}/api/tags/8', form)!
+	x = do_post_form('http://${localserver}/api/tags/6', form)!
 	assert x.status() == .bad_request
 
 	form['tag_id'] = '1'
-	x = do_post_form('http://${localserver}/api/tags/8', form)!
+	x = do_post_form('http://${localserver}/api/tags/6', form)!
 	assert x.status() == .ok
 
 	tag := json.decode(vaunt.Tag, x.body)!
@@ -640,12 +633,12 @@ fn test_add_tag_to_article() {
 }
 
 fn test_get_tags_from_article() {
-	mut x := do_get('http://${localserver}/api/tags/3')!
+	mut x := do_get('http://${localserver}/api/tags/2')!
 	assert x.status() == .ok
 	mut tags := json.decode([]vaunt.Tag, x.body)!
 	assert tags.len == 0
 
-	x = do_get('http://${localserver}/api/tags/8')!
+	x = do_get('http://${localserver}/api/tags/6')!
 	assert x.status() == .ok
 
 	tags = json.decode([]vaunt.Tag, x.body)!
@@ -664,7 +657,7 @@ fn test_update_tag() {
 	assert tag.name == 'other'
 
 	// tag should be changed for all articles as well
-	x = do_get('http://${localserver}/api/tags/8')!
+	x = do_get('http://${localserver}/api/tags/6')!
 	assert x.status() == .ok
 	tags := json.decode([]vaunt.Tag, x.body)!
 	assert tags.len == 1
@@ -745,6 +738,8 @@ fn testsuite_end() {
 	}
 	assert x.status() == .ok
 	assert x.body == 'good bye'
+
+	os.rm(db_file) or {}
 }
 
 // utility
@@ -759,8 +754,8 @@ fn create_article(name string, description string, block_data string) !vaunt.Art
 	return json.decode(vaunt.Article, x.body)!
 }
 
-fn get_connection() !pg.DB {
-	mut db := pg.connect(user: db_user, password: db_password, dbname: db_name)!
+fn get_connection() !sqlite.DB {
+	mut db := sqlite.connect(db_file)!
 	return db
 }
 

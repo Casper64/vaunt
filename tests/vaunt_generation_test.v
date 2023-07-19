@@ -1,7 +1,7 @@
 import os
 import time
 import net.http
-import db.pg
+import db.sqlite
 import vaunt
 import json
 
@@ -12,9 +12,8 @@ const (
 	exit_after_time        = 12000 // milliseconds
 	vexe                   = os.getenv('VEXE')
 	serverexe              = os.join_path(os.cache_dir(), 'vaunt_generation_test_server.exe')
-	db_user                = 'dev'
-	db_password            = 'password'
-	db_name                = 'vaunt-test'
+	db_file                = os.join_path(os.cache_dir(), 'vaunt_generation_test.db')
+
 	output_dir             = os.abs_path('tests/public')
 	static_dir             = os.abs_path('tests/static')
 	upload_dir             = os.abs_path('tests/uploads')
@@ -44,14 +43,9 @@ fn testsuite_begin() {
 	if os.exists('tests/public') {
 		os.rmdir_all('tests/public')!
 	}
-}
-
-fn test_setup_database() {
-	mut db := get_connection() or { panic(err) }
-	db.drop('categories') or {}
-	db.drop('articles') or {}
-	db.drop('images') or {}
-	db.drop('tags') or {}
+	if os.exists(db_file) {
+		os.rm(db_file) or {}
+	}
 }
 
 fn test_vaunt_app_can_be_compiled() {
@@ -65,7 +59,7 @@ fn test_vaunt_runs_in_background() {
 	$if !windows {
 		suffix = ' > /dev/null &'
 	}
-	server_exec_cmd := '${os.quoted_path(serverexe)} ${sport} ${exit_after_time} ${db_user} ${db_password} ${db_name} ${suffix}'
+	server_exec_cmd := '${os.quoted_path(serverexe)} ${sport} ${exit_after_time} ${db_file} ${suffix}'
 	$if windows {
 		spawn os.system(server_exec_cmd)
 	} $else {
@@ -82,7 +76,7 @@ fn test_vaunt_runs_in_background() {
 }
 
 fn test_generate_succeeds() {
-	result := os.execute('${os.quoted_path(vexe)} run tests/vaunt_generation_test_app.v  ${sport2} ${exit_after_time} ${db_user} ${db_password} ${db_name} --generate --out ${output_dir}')
+	result := os.execute('${os.quoted_path(vexe)} run tests/vaunt_generation_test_app.v  ${sport2} ${exit_after_time} ${db_file} --generate --out ${output_dir}')
 	dump(result.output)
 	assert result.exit_code == 0
 	// test custom output dir
@@ -276,11 +270,13 @@ fn testsuite_end() {
 	}
 	assert x.status() == .ok
 	assert x.body == 'good bye'
+
+	os.rm(db_file) or {}
 }
 
 // Utility
-fn get_connection() !pg.DB {
-	mut db := pg.connect(user: db_user, password: db_password, dbname: db_name)!
+fn get_connection() !sqlite.DB {
+	mut db := sqlite.connect(db_file)!
 	return db
 }
 

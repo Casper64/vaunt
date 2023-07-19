@@ -1,7 +1,7 @@
 module vaunt
 
-import db.pg
 import json
+import orm
 import vweb
 import strconv
 
@@ -26,7 +26,7 @@ pub mut:
 
 // update_theme_db updates the database at the start of the app to ensure that
 // all options are in the database
-fn update_theme_db[T](db &pg.DB, theme &T) ! {
+fn update_theme_db[T](db orm.Connection, theme &T) ! {
 	options := sql db {
 		select from ThemeOption
 	} or { []ThemeOption{} }
@@ -87,7 +87,7 @@ fn update_theme_db[T](db &pg.DB, theme &T) ! {
 }
 
 // update_theme retrieves all options from the database and updates the theme
-pub fn update_theme[T](db &pg.DB, mut theme T) vweb.RawHtml {
+pub fn update_theme[T](db orm.Connection, mut theme T) vweb.RawHtml {
 	mut all_colors := map[string]string{}
 
 	options := sql db {
@@ -143,7 +143,7 @@ pub:
 		'/': [cors]
 	}
 pub mut:
-	db pg.DB [required; vweb_global]
+	db orm.Connection [required; vweb_global]
 }
 
 pub fn (mut app ThemeHandler) before_request() {

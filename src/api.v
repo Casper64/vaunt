@@ -1,10 +1,10 @@
 module vaunt
 
 import vweb
-import db.pg
 import net.http
 import net.urllib
 import net.html
+import orm
 import os
 import time
 import json
@@ -27,7 +27,7 @@ pub:
 	upload_dir   string [required; vweb_global]
 	articles_url string [required; vweb_global]
 pub mut:
-	db pg.DB [required]
+	db orm.Connection [required]
 }
 
 // simple cors handler for admin panel dev server, that's also why you see method "options" on some routes
@@ -300,7 +300,7 @@ pub fn (mut app Api) update_article(article_id int) vweb.Result {
 
 	// change visibility
 	if is_empty('show', app.form) == false {
-		showing := app.form['show']
+		showing := app.form['show'] == 'true'
 		sql app.db {
 			update Article set show = showing where id == article_id
 		} or {
@@ -841,7 +841,7 @@ fn sanitize_path(path string) string {
 
 // check_category_article_name_collision returns an error if `name` collides
 // with an article or category name
-fn check_category_article_name_collision(db pg.DB, name string) ! {
+fn check_category_article_name_collision(db orm.Connection, name string) ! {
 	converted_name := sanitize_path(name)
 
 	all_categories := get_all_categories(db)
@@ -860,7 +860,7 @@ fn check_category_article_name_collision(db pg.DB, name string) ! {
 	}
 }
 
-fn check_tag_name_collision(db pg.DB, name string) ! {
+fn check_tag_name_collision(db orm.Connection, name string) ! {
 	converted_name := sanitize_path(name)
 
 	all_tags := get_all_tags(db)
@@ -871,7 +871,7 @@ fn check_tag_name_collision(db pg.DB, name string) ! {
 	}
 }
 
-fn check_tag_name_collision_exclusive(db pg.DB, new_name string, old_id int) ! {
+fn check_tag_name_collision_exclusive(db orm.Connection, new_name string, old_id int) ! {
 	converted_new_name := sanitize_path(new_name)
 
 	all_tags := get_all_tags(db)
@@ -886,7 +886,7 @@ fn check_tag_name_collision_exclusive(db pg.DB, new_name string, old_id int) ! {
 
 // get_publish_paths returns the file path for the html file and the according
 // url WITHOUT '/articles/'
-fn get_publish_paths(db pg.DB, template_dir string, article &Article) !(string, string) {
+fn get_publish_paths(db orm.Connection, template_dir string, article &Article) !(string, string) {
 	mut file_path := ''
 	mut article_path := ''
 	if article.category_id == 0 {
@@ -925,7 +925,6 @@ fn upload_resized_images_from(fdata []u8, name string, img_dir string) ! {
 
 	img := stbi.load(file_path, desired_channels: 0)!
 
-	println('file info: w:${img.width} h:${img.height} c:${img.nr_channels}')
 	// get minimum width/height to determine orientation
 	landscape := img.width >= img.height
 

@@ -3,7 +3,7 @@ module main
 import vaunt
 import vweb
 import os
-import db.pg
+import db.sqlite
 import time
 
 const (
@@ -22,9 +22,9 @@ pub:
 	template_dir string                 [vweb_global]
 	upload_dir   string                 [vweb_global]
 pub mut:
-	dev    bool   [vweb_global] // used by Vaunt internally
+	dev    bool      [vweb_global] // used by Vaunt internally
 	theme  Theme
-	db     pg.DB
+	db     sqlite.DB
 	s_html string // used by Vaunt to generate html
 }
 
@@ -35,8 +35,8 @@ fn exit_after_timeout(timeout_in_ms int) {
 }
 
 fn main() {
-	if os.args.len != 6 {
-		panic('Usage: `vaunt_test_app.exe PORT TIMEOUT_IN_MILLISECONDS DB_USER DB_PASSWORD DB_NAME`')
+	if os.args.len != 4 {
+		panic('Usage: `vaunt_test_app.exe PORT TIMEOUT_IN_MILLISECONDS DB_FILE`')
 	}
 	http_port := os.args[1].int()
 	assert http_port > 0
@@ -47,7 +47,7 @@ fn main() {
 	theme := Theme{}
 
 	// insert your own credentials
-	db := pg.connect(user: os.args[3], password: os.args[4], dbname: os.args[5])!
+	db := sqlite.connect(os.args[3])!
 
 	// setup database and controllers
 	controllers := vaunt.init(db, template_dir, upload_dir, theme, 'secret')!

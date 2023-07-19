@@ -6,7 +6,7 @@ import crypto.sha256
 import encoding.base64
 import json
 import time
-import db.pg
+import orm
 import os
 import crypto.bcrypt
 import net.http
@@ -28,7 +28,7 @@ pub struct Auth {
 	vweb.Context
 	secret string [vweb_global]
 pub mut:
-	db pg.DB [required]
+	db orm.Connection [required]
 }
 
 pub fn (mut app Auth) not_found() vweb.Result {
@@ -87,7 +87,7 @@ pub struct User {
 }
 
 // verify_user checks `db` if a user exists with username=`uname` and password=`upass`
-fn verify_user(db pg.DB, uname string, upass string) !User {
+fn verify_user(db orm.Connection, uname string, upass string) !User {
 	mut expected_hash := ''
 	rows := sql db {
 		select from User where username == uname
@@ -187,7 +187,7 @@ fn quick_verify(token string) bool {
 // =======================
 
 // create_super_user creates a superuser via CLI
-fn create_super_user(db pg.DB) ! {
+fn create_super_user(db orm.Connection) ! {
 	current_users := sql db {
 		select from User
 	}!

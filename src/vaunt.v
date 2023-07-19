@@ -1,16 +1,16 @@
 module vaunt
 
-import vweb
-import os
 import flag
-import db.pg
 import net
+import orm
+import os
+import vweb
 
 const (
 	std_err_msg = '\nSee the docs for more information on required methods.'
 )
 
-pub fn init[T](db &pg.DB, template_dir string, upload_dir string, theme &T, secret string) ![]&vweb.ControllerPath {
+pub fn init[T](db orm.Connection, template_dir string, upload_dir string, theme &T, secret string) ![]&vweb.ControllerPath {
 	init_database(db)!
 	update_theme_db(db, theme)!
 

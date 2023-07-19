@@ -1,14 +1,14 @@
 module vaunt
 
 import vweb
-import db.pg
+import orm
 import os
 
 pub struct Admin {
 	vweb.Context
 	secret string [vweb_global]
 pub mut:
-	db pg.DB [required; vweb_global]
+	db orm.Connection [required; vweb_global]
 }
 
 pub fn (mut app Admin) before_request() {
@@ -33,9 +33,9 @@ pub fn (mut app Admin) not_found() vweb.Result {
 pub struct Upload {
 	vweb.Context
 pub mut:
-	db           pg.DB  [required; vweb_global]
-	upload_dir   string [required; vweb_global]
-	current_path string [vweb_global]
+	db           orm.Connection [required; vweb_global]
+	upload_dir   string         [required; vweb_global]
+	current_path string         [vweb_global]
 }
 
 // handle static image uploads

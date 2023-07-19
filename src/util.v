@@ -1,7 +1,7 @@
 module vaunt
 
 import vweb
-import db.pg
+import orm
 import os
 
 type SkipGenerationResult = vweb.Result
@@ -12,7 +12,7 @@ mut:
 pub:
 	skip_generation SkipGenerationResult
 pub mut:
-	db           pg.DB
+	db           orm.Connection
 	theme_css    vweb.RawHtml
 	is_superuser bool
 	s_html       string // used by Vaunt to generate html
@@ -139,7 +139,7 @@ pub fn (u &Util) get_tag_by_id(id int) !Tag {
 // =============================
 
 // get all categories
-pub fn get_all_categories(db pg.DB) []Category {
+pub fn get_all_categories(db orm.Connection) []Category {
 	mut categories := sql db {
 		select from Category order by name
 	} or { []Category{} }
@@ -147,7 +147,7 @@ pub fn get_all_categories(db pg.DB) []Category {
 	return categories
 }
 
-pub fn get_category_by_id(db pg.DB, category_id int) !Category {
+pub fn get_category_by_id(db orm.Connection, category_id int) !Category {
 	mut rows := sql db {
 		select from Category where id == category_id
 	} or { []Category{} }
@@ -160,7 +160,7 @@ pub fn get_category_by_id(db pg.DB, category_id int) !Category {
 }
 
 // get all articles
-pub fn get_all_articles(db pg.DB) []Article {
+pub fn get_all_articles(db orm.Connection) []Article {
 	mut articles := sql db {
 		select from Article order by updated_at desc
 	} or { []Article{} }
@@ -175,7 +175,7 @@ pub fn get_all_articles(db pg.DB) []Article {
 }
 
 // get all articles by category id
-pub fn get_all_articles_by_category(db pg.DB, category int) []Article {
+pub fn get_all_articles_by_category(db orm.Connection, category int) []Article {
 	mut articles := sql db {
 		select from Article where category_id == category order by updated_at desc
 	} or { []Article{} }
@@ -190,7 +190,7 @@ pub fn get_all_articles_by_category(db pg.DB, category int) []Article {
 }
 
 // get all articles that have the tag `tag_name`
-pub fn get_articles_by_tag(db pg.DB, _tag_name string) []Article {
+pub fn get_articles_by_tag(db orm.Connection, _tag_name string) []Article {
 	tag_name := sanitize_path(_tag_name)
 
 	mut articles := get_all_articles(db)
@@ -203,7 +203,7 @@ pub fn get_articles_by_tag(db pg.DB, _tag_name string) []Article {
 }
 
 // get an article by id
-pub fn get_article(db pg.DB, article_id int) !Article {
+pub fn get_article(db orm.Connection, article_id int) !Article {
 	mut articles := sql db {
 		select from Article where id == article_id
 	}!
@@ -219,7 +219,7 @@ pub fn get_article(db pg.DB, article_id int) !Article {
 }
 
 // get an article by name
-pub fn get_article_by_name(db pg.DB, _article_name string) !Article {
+pub fn get_article_by_name(db orm.Connection, _article_name string) !Article {
 	// de-sanitize path
 	article_name := _article_name.replace('-', ' ')
 	mut articles := get_all_articles(db)
@@ -239,7 +239,7 @@ pub fn get_article_by_name(db pg.DB, _article_name string) !Article {
 }
 
 // get image by id
-pub fn get_image(db pg.DB, image_id int) !Image {
+pub fn get_image(db orm.Connection, image_id int) !Image {
 	images := sql db {
 		select from Image where id == image_id
 	}!
@@ -250,7 +250,7 @@ pub fn get_image(db pg.DB, image_id int) !Image {
 }
 
 // get all types of tags
-pub fn get_all_tags(db pg.DB) []Tag {
+pub fn get_all_tags(db orm.Connection) []Tag {
 	tags := sql db {
 		select from Tag where article_id == 0
 	} or { []Tag{} }
@@ -258,7 +258,7 @@ pub fn get_all_tags(db pg.DB) []Tag {
 }
 
 // get all tags that belong to an article
-pub fn get_tags_from_article(db pg.DB, _article_id int) []Tag {
+pub fn get_tags_from_article(db orm.Connection, _article_id int) []Tag {
 	tags := sql db {
 		select from Tag where article_id == _article_id
 	} or { []Tag{} }
@@ -266,7 +266,7 @@ pub fn get_tags_from_article(db pg.DB, _article_id int) []Tag {
 }
 
 // get a tag by name
-pub fn get_tag(db pg.DB, name string) !Tag {
+pub fn get_tag(db orm.Connection, name string) !Tag {
 	converted_name := sanitize_path(name)
 	tags := sql db {
 		select from Tag where name == converted_name && article_id == 0
@@ -278,7 +278,7 @@ pub fn get_tag(db pg.DB, name string) !Tag {
 }
 
 // get a tag by id
-pub fn get_tag_by_id(db pg.DB, tag int) !Tag {
+pub fn get_tag_by_id(db orm.Connection, tag int) !Tag {
 	tags := sql db {
 		select from Tag where id == tag
 	}!

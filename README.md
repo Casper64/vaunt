@@ -40,10 +40,7 @@ v install --git https://github.com/Casper64/vaunt
 Now you are able to import Vaunt directly into your projects with `import vaunt`!
 
 ## Database
-For now Vaunt only supports PostgreSQL. You can start a database with 
-```
-sudo -u postgres psql -c "create database vaunt"
-```
+Vaunt works with all databases in the `db` module.
 
 ## Quick Start
 Go to the [Vaunt default theme](https://github.com/Casper64/vaunt-default) 
@@ -64,7 +61,7 @@ module main
 import vaunt
 import vweb
 import os
-import db.pg
+import db.sqlite
 
 const (
 	template_dir = os.abs_path('templates') // where you want to store templates
@@ -85,13 +82,13 @@ pub:
 	upload_dir   string                 [vweb_global]
 pub mut:
 	dev    bool   [vweb_global] // used by Vaunt internally
-	db     pg.DB
+	db     sqlite.DB
 	theme  Theme // Theme settings
 }
 
 fn main() {
-	// insert your own credentials
-	db := pg.connect(user: 'dev', password: 'password', dbname: 'vaunt')!
+	// insert your own database
+	db := sqlite.connect('app.db')!
 	
 	theme := Theme{}
 	

@@ -1,8 +1,8 @@
 module vaunt
 
-import db.pg
+import orm
 
-fn init_database(db &pg.DB) ! {
+fn init_database(db orm.Connection) ! {
 	println('[Vaunt] Starting db...')
 
 	// for `User` definition see `auth.v`
@@ -34,8 +34,8 @@ pub mut:
 	thumbnail   int
 	image_src   string // need this in json, but there is no skip_sql yet
 	block_data  string [nonull]
-	created_at  string [default: 'CURRENT_TIMESTAMP'; sql_type: 'TIMESTAMP']
-	updated_at  string [default: 'now()'; sql_type: 'TIMESTAMP']
+	created_at  string [default: 'CURRENT_TIMESTAMP'; sql_type: 'Timestamp']
+	updated_at  string [default: 'CURRENT_TIMESTAMP'; sql_type: 'Timestamp']
 	// tags []Tag [fkey: 'article_id'] // doesn't work???
 }
 
