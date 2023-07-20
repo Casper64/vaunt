@@ -1,0 +1,9 @@
+<div class="vaunt-toc" role="navigation">
+    <ol>
+        @for header in blocks 
+        <li>
+            <a class="toc-header-@{header.level}" href="@{header.link}">@{header.text}</a>
+        </li>
+        @endfor
+    </ol>
+</div>

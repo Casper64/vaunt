@@ -3,6 +3,7 @@ module vaunt
 import vweb
 import orm
 import os
+import json
 
 type SkipGenerationResult = vweb.Result
 
@@ -19,7 +20,7 @@ pub mut:
 }
 
 // get the correct url in your templates
-// usage: `href="@{app.article_url(article)}"`
+// usage: `href="@{app.article_url(article)} "`
 pub fn (u &Util) article_url(article Article) vweb.RawHtml {
 	if article.category_id != 0 {
 		category := get_category_by_id(u.db, article.category_id) or { return '' }
@@ -75,7 +76,7 @@ pub fn (u &Util) html_picture_from_image(img_id int) vweb.RawHtml {
 }
 
 // url adds '.html' after the url if the site is being generated
-// usage: `href="@{app.url('/my-page')}"`
+// usage: `href="@{app.url('/my-page')} "`
 pub fn (u &Util) url(url string) vweb.RawHtml {
 	if u.dev {
 		return '${url}'
@@ -86,6 +87,58 @@ pub fn (u &Util) url(url string) vweb.RawHtml {
 		return '${url}.html'
 	}
 }
+
+// 		Table of Contents
+// ============================
+
+pub struct TOCBlock {
+pub:
+	// the header level: h1, h2, h3 etc.
+	level int
+	text  string
+	// the id of the article element
+	link string
+}
+
+[params]
+pub struct TOCParams {
+	// by default show h1-h3
+	min_level int = 1
+	max_level int = 3
+}
+
+// get_toc returns a table of contents markup for the headers of `article`
+pub fn (u &Util) get_toc(article Article, params TOCParams) vweb.RawHtml {
+	blocks := u.get_toc_blocks(article, params)
+	return $tmpl('./templates/components/toc.html')
+}
+
+// get_toc_blocks returns a list of the header blocks that can be used to generate a
+// table of contents
+pub fn (u &Util) get_toc_blocks(article Article, params TOCParams) []TOCBlock {
+	mut blocks := json.decode([]Block, article.block_data) or { []Block{} }
+	blocks = blocks.filter(it.block_type == 'heading')
+
+	mut toc_blocks := []TOCBlock{}
+
+	for block in blocks {
+		data := json.decode(HeadingData, block.data) or { HeadingData{} }
+		if !(data.level >= params.min_level && data.level <= params.max_level) {
+			continue
+		}
+
+		toc_blocks << TOCBlock{
+			level: data.level
+			text: data.text
+			link: '#' + sanitize_path(data.text)
+		}
+	}
+
+	return toc_blocks
+}
+
+// 		Database Helpers
+// =============================
 
 pub fn (u &Util) get_all_articles() []Article {
 	return get_all_articles(u.db)

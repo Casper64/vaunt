@@ -564,9 +564,8 @@ You can directly include `app.theme_css` in your templates.
 </head>
 ```
 
-## Api
 
-### Utility
+## Utility
 
 Vaunt offers a few utility functions that you can use in your app for getting articles,
 categories and other stuff:
@@ -581,16 +580,18 @@ templates, except for the functions that return a `Result` type.
     @endfor
 </ul>
 ```
-#### Templates
+### Templates
+
+(due to a bug in v you need to add an extra space before the last ")
 
 ```v
-// url adds '.html' after the url if the site is being generated
-// usage: `href="@{app.url('/my-page')}"`
+// url adds '.html' after the url if the site is being generated 
+// usage: `href="@{app.url('/my-page')} "`
 pub fn (u &Util) url(url string) vweb.RawHtml
 
 // get the correct url in your templates
-// usage: `href="@{app.article_url(article)}"`
-pub fn (u &Util) article_url(article Article) string
+// usage: `href="@{app.article_url(article)} "`
+pub fn (u &Util) article_url(article Article) vweb.RawHtml
 
 // article_html returns the html for that article
 pub fn (u &Util) article_html(article_name string, template_dir string) !vweb.RawHtml
@@ -604,27 +605,47 @@ pub fn (u &Util) category_article_html(category_name string, article_name string
 pub fn (u &Util) html_picture_from_article_thumbnail(article Article) vweb.RawHtml 
 ```
 
-#### Vweb Config
-You can edit the vweb configuration in `vaunt.start`
+
+#### Table of Contents
+
+All heading blocks in vaunt have an id in the same way github markdown generates id's
+for headings. A `h1` tag with the text "This is a header" will have an id of "this-is-a-header".
+We can use these id's to generate a table of contents for each article.
+
+You can either get a default template, or the Block data to generate a table of contents yourself.
+
+```v
+pub struct TOCBlock {
+pub:
+	// the header level: h1, h2, h3 etc.
+	level int
+	text string
+	// the id of the article element
+	link string
+}
+
+[params]
+pub struct TOCParams {
+	// by default show h1-h3
+	min_level int = 1
+	max_level int = 3
+}
+
+// get_toc returns a table of contents markup for the headers of `article`
+pub fn (u &Util) get_toc(article Article, params TOCParams) vweb.RawHtml
+
+// get_toc_blocks returns a list of the header blocks that can be used to generate a
+// table of contents
+pub fn (u &Util) get_toc_blocks(article Article, params TOCParams) []TOCBlock
+```
 
 **Example:**
-
-```v
-vaunt.start(mut app, 8080, host: '0.0.0.0', nr_workers: 4)
+```html
+<p>Table of contents:</p>
+@{app.get_toc(article)}
 ```
 
-```v
-[params]
-pub struct RunParams {
-	family               net.AddrFamily = .ip
-	host                 string = '127.0.0.1'
-	nr_workers           int    = 1
-	pool_channel_slots   int    = 1000
-	show_startup_message bool   = true
-}
-```
-
-#### Database
+### Database
 
 ```v
 pub fn (u &Util) get_all_articles() []Article
@@ -652,6 +673,27 @@ pub fn (u &Util) get_tag(name string) !Tag
 pub fn (u &Util) get_tag_by_id(id int) !Tag
 ```
 
+## Api
+
+### Vweb Config
+You can edit the vweb configuration in `vaunt.start`
+
+**Example:**
+
+```v
+vaunt.start(mut app, 8080, host: '0.0.0.0', nr_workers: 4)
+```
+
+```v
+[params]
+pub struct RunParams {
+	family               net.AddrFamily = .ip
+	host                 string = '127.0.0.1'
+	nr_workers           int    = 1
+	pool_channel_slots   int    = 1000
+	show_startup_message bool   = true
+}
+```
 
 ### Articles
 The `[]Article` type has a couple of built-in functions to filter the array.
