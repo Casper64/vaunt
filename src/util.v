@@ -117,11 +117,14 @@ pub fn (u &Util) get_toc(article Article, params TOCParams) vweb.RawHtml {
 // table of contents
 pub fn (u &Util) get_toc_blocks(article Article, params TOCParams) []TOCBlock {
 	mut blocks := json.decode([]Block, article.block_data) or { []Block{} }
-	blocks = blocks.filter(it.block_type == 'heading')
 
 	mut toc_blocks := []TOCBlock{}
 
-	for block in blocks {
+	for idx, block in blocks {
+		if block.block_type != 'heading' {
+			continue
+		}
+
 		data := json.decode(HeadingData, block.data) or { HeadingData{} }
 		if !(data.level >= params.min_level && data.level <= params.max_level) {
 			continue
@@ -130,7 +133,7 @@ pub fn (u &Util) get_toc_blocks(article Article, params TOCParams) []TOCBlock {
 		toc_blocks << TOCBlock{
 			level: data.level
 			text: data.text
-			link: '#' + sanitize_path(data.text)
+			link: '#' + sanitize_path(data.text) + '-' + idx.str()
 		}
 	}
 

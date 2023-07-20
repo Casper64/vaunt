@@ -20,10 +20,10 @@ pub fn generate(data string) string {
 
 	mut html := ''
 
-	for block in blocks {
+	for idx, block in blocks {
 		html += match block.block_type {
 			'heading' {
-				generate_heading(block)
+				generate_heading(block, idx)
 			}
 			'paragraph' {
 				generate_paragraph(block)
@@ -66,9 +66,9 @@ pub:
 	level int
 }
 
-pub fn generate_heading(block &Block) string {
+pub fn generate_heading(block &Block, block_index int) string {
 	data := json.decode(HeadingData, block.data) or { HeadingData{} }
-	id_name := sanitize_path(data.text)
+	id_name := sanitize_path(data.text) + '-' + block_index.str()
 
 	if data.level == 1 {
 		return $tmpl('./templates/blocks/h1.html')
