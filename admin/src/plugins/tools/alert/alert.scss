@@ -1,0 +1,31 @@
+
+.cdx-alert {
+    &.info {
+        background-color: rgba(51, 181, 229, 0.2);
+    }
+    &.success {
+        background-color: rgba(0, 200, 81, 0.2);
+    }
+    &.warn {
+        background-color: rgba(255, 187, 51, 0.2);
+    }
+    &.danger {
+        background-color: rgba(255, 68, 68, 0.2);
+    }
+}
+
+.cdx-alert[contentEditable=true][data-placeholder]::before{
+    position: absolute;
+    content: attr(data-placeholder);
+    color: #707684;
+    font-weight: normal;
+    opacity: 0;
+  }
+  
+.cdx-alert[contentEditable=true][data-placeholder]:empty::before {
+opacity: 1;
+}
+
+.cdx-alert[contentEditable=true][data-placeholder]:empty:focus::before {
+opacity: 0;
+}

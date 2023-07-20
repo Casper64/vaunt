@@ -37,8 +37,8 @@ const text = computed(() => {
     <div class="block-icon">
         <img class="block-icon" :src="icon">
     </div>
-    <!-- <p class="block-name">{{ name }}</p> -->
-    <p class="block-text">{{ text }}</p>
+    <p v-if="block.type == 'heading'" class="block-text">{{ text }}</p>
+    <p v-else class="block-name">{{ name }}</p>
 </div>
 </template>
 

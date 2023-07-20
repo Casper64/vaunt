@@ -49,6 +49,9 @@ pub fn generate(data string) string {
 			'list' {
 				generate_list(block)
 			}
+			'alert' {
+				generate_alert(block)
+			}
 			else {
 				''
 			}
@@ -263,4 +266,15 @@ pub fn generate_list(block &Block) string {
 	})
 
 	return '<${list_type}>${lis.join_lines()}</${list_type}>'
+}
+
+pub struct AlertData {
+pub:
+	typ  string
+	text string
+}
+
+pub fn generate_alert(block &Block) string {
+	mut data := json.decode(AlertData, block.data) or { AlertData{} }
+	return $tmpl('./templates/blocks/alert.html')
 }

@@ -8,7 +8,6 @@ import ArticleEditor from '@/components/blocks/ArticleEditor.vue'
 <template>
 <div class="editor-container">
     <div class="block-sidebar">
-        <p class="content">CONTENT</p>
         <BlocksContainer/>
     </div>
     <div class="document-container">
@@ -30,14 +29,6 @@ import ArticleEditor from '@/components/blocks/ArticleEditor.vue'
 .block-sidebar {
     background-color: white;
     border-right: 1px solid var(--border-color);
-
-    p.content {
-        color: var(--text);
-        font-size: 20px;
-        font-weight: 900;
-        text-align: center;
-        padding: 20px 0;
-    }
 }
 
 .document-container {

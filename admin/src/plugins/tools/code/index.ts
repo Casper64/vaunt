@@ -6,14 +6,14 @@ import { indentOnInput, bracketMatching, syntaxHighlighting, defaultHighlightSty
 import { indentWithTab } from "@codemirror/commands"
 import { languages } from "@codemirror/language-data";
 import {StreamLanguage} from "@codemirror/language"
-import { createMode } from './v/v'
+import { createMode } from '@/plugins/tools/v'
 
 import { oneDark } from "@codemirror/theme-one-dark";
 
 //@ts-ignore
 import NiceSelect from "nice-select2/dist/js/nice-select2"
 import "nice-select2/dist/css/nice-select2.css";
-import "@/plugins/tools/code.scss"
+import "@/plugins/tools/code/code.scss"
 
 interface CodeBlockData {
     language: string

@@ -6,7 +6,8 @@ import { blockComment } from '@codemirror/commands';
 
 const store = useBlockStore()
 
-const active = ref(0)
+const activeHeading = ref(0)
+const current = ref(0)
 
 const headingBlocks = computed(() => {
     return store.blocks.filter(b => b.type == 'heading' && b.data.level <= 3)
@@ -28,33 +29,42 @@ const headingMap = computed(() => {
 function checkActive() {
     const activeElement = document.querySelector('.ce-block--focused')!
     // check if block is a heading
-    if (activeElement.children[0].children[0].classList.contains('ce-header') == false) {
-        return
-    }
+    
 
     const parent = activeElement.parentNode!
     // get index amongst siblings to display a blue border around the focused block
     const index = Array.prototype.indexOf.call(parent.children, activeElement);
-    active.value = headingMap.value[index]
+
+    current.value = index
+    if (activeElement.children[0].children[0].classList.contains('ce-header') == true) {
+        activeHeading.value = headingMap.value[index]
+    } else {
+        activeHeading.value = -1
+    }
 }
 
-function setActive(heading: number) {
-    const index = Object.values(headingMap.value).indexOf(heading)
+function setActive(index: number) {
+    const editor = document.querySelector('.document-container')!
     const blocks = document.querySelectorAll('.ce-block')
-
-    const activeElement = document.querySelector('.ce-block--focused')
+    const activeElement = document.querySelector('.ce-block--focused')!
     if (activeElement) {
         activeElement.classList.remove('ce-block--focused')
     }
-    blocks.item(index).classList.add('ce-block--focused')
-    const editor = document.querySelector('.document-container')!
-    editor.scrollTo({
-        behavior: 'smooth',
-        //@ts-ignore
-        top: blocks.item(index).offsetTop
-    })
+    
+    const headingIndex = Object.values(headingMap.value).indexOf(index)
+    if (headingIndex != -1) {
 
-    active.value = heading
+        blocks.item(headingIndex).classList.add('ce-block--focused')
+        editor.scrollTo({
+            behavior: 'smooth',
+            //@ts-ignore
+            top: blocks.item(headingIndex).offsetTop
+        })
+
+        activeHeading.value = index
+        current.value = index
+    }
+    
 }
 
 onMounted(() => {
@@ -69,9 +79,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+    <p class="content">CURRENT BLOCK</p>
+    <Block :block="store.blocks[current]" active @click="setActive(current)" />
+    <p class="content">CONTENT</p>
     <div class="block-container">
         <template v-for="block, index in headingBlocks">
-            <Block :block="block" :active="active == index" @click="setActive(index)" />
+            <Block :block="block" :active="activeHeading == index" @click="setActive(index)" />
         </template>
     </div>
 </template>
@@ -79,8 +92,16 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 
 .block-container {
-    height: calc(100vh - 80px - 64px);
+    height: calc(100vh - 80px - 64px - 104px);
     overflow-y: auto;
+}
+
+p.content {
+    color: var(--text);
+    font-size: 20px;
+    font-weight: 900;
+    text-align: center;
+    padding: 20px 0;
 }
 
 </style>

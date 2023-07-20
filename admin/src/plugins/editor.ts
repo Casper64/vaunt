@@ -12,9 +12,13 @@ import Header from '@editorjs/header'
 import Table from '@editorjs/table'
 import DragDrop from 'editorjs-drag-drop'
 import ColorPlugin from 'editorjs-text-color-plugin'
-import CodeBlock from '@/plugins/tools/code'
 import InlineCode from '@editorjs/inline-code'
-import { BASE_URL } from './urls'
+
+// Custom blocks
+import CodeBlock from '@/plugins/tools/code'
+import AlertBlock from '@/plugins/tools/alert'
+
+import { BASE_URL } from '@/plugins/urls'
 
 // pass endpoint strings
 interface EditorUrlConfig {
@@ -96,6 +100,10 @@ export function createEditor(id : string, blockData: any, urlConf: EditorUrlConf
             },
             inlineCode: {
                 class: InlineCode,
+            },
+            alert: {
+                class: AlertBlock,
+                inlineToolbar: true
             },
             quote: {
                 class: Quote,

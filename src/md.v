@@ -154,12 +154,29 @@ fn insert_blockquote(tag &html.Tag) Block {
 	mut content := replace_tag_name(tag.str(), 'blockquote')
 	content = replace_tag_name(content, 'p')
 	content = replace_inline_stuff(content)
+
+	if content.to_lower().starts_with('<b>note') {
+		return to_alert(content)
+	}
+
 	mut data := QuoteData{
 		text: content
 	}
 
 	return Block{
 		block_type: 'quote'
+		data: json.encode(data)
+	}
+}
+
+fn to_alert(content string) Block {
+	mut data := AlertData{
+		text: content
+		typ: 'info'
+	}
+
+	return Block{
+		block_type: 'alert'
 		data: json.encode(data)
 	}
 }

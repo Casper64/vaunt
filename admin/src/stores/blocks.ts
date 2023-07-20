@@ -7,8 +7,8 @@ export const useBlockStore = defineStore('block', {
         return {
             blocks: [] as OutputBlockData<string, any>[],
             // map names to icons. To future me: convert this shit into a hashmap
-            names: ['heading', 'paragraph', 'image', 'linkTool', 'quote', 'embed', 'table', 'code', 'list'],
-            icons: ['h1','text', 'img', 'link', 'quote', 'embed', 'table', 'code', 'list']
+            names: ['heading', 'paragraph', 'image', 'linkTool', 'quote', 'embed', 'table', 'code', 'list', 'alert'],
+            icons: ['h1','text', 'img', 'link', 'quote', 'embed', 'table', 'code', 'list', 'alert']
         }
     },
     actions: {
