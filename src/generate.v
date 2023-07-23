@@ -1,9 +1,12 @@
 module vaunt
 
+import json
 import time
 import os
 import vweb
 import net.http
+
+// TODO: refactor this horror code when I'm less tired...
 
 // These interfaces are used to make using these methods optional to the user
 interface AppWithTemplateDir {
@@ -35,7 +38,7 @@ mut:
 	dev bool
 }
 
-fn start_site_generation[T](mut app T, output_dir string) ! {
+fn start_site_generation[T](mut app T, output_dir string, settings GenerateSettings) ! {
 	println('[Vaunt] Starting site generation into "${output_dir}"...')
 
 	start := time.ticks()
@@ -101,62 +104,22 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 					return
 				}
 			} else if method.attrs.any(it.contains(':')) {
-				eprintln('error while generating "${method.name}": generating custom dynamic routes is not supported yet!')
+				if method.name !in settings.dynamic_routes {
+					eprintln('[Vaunt] Error: no `DynamicConfig` struct found for method "${method.name}"${std_err_msg}"')
+					return
+				}
+
+				// valid dynamic route
+				urls << generate_dynamic[T](mut app, dist_path, settings.dynamic_routes[method.name],
+					initial_seo, method) or {
+					eprintln(err)
+					return
+				}
 			} else if method.name != 'not_found' && validate_route_http_method(method.attrs) {
-				i_start := time.ticks()
-
-				mut route := method.name
-				mut url := '/${route}'
-
-				// get route name from attributes if any
-				for attr in method.attrs {
-					if attr.starts_with('/') == false {
-						continue
-					}
-					route = method.attrs[0]
-
-					// add index pages for routes like "/" -> "index.html" or "/pages/" -> "pages/index.html
-					url = route
-					if route.ends_with('/') {
-						route += 'index'
-					}
-
-					// skip leading "/"
-					route = route[1..]
-				}
-
-				output_file := '${route}.html'
-				urls << output_file
-
-				file_path := os.join_path(dist_path, output_file)
-
-				// make dirs for nested routes
-				os.mkdir_all(os.dir(file_path))!
-
-				// change app.req.url according to the current route
-				app.Context = vweb.Context{
-					...app.Context
-					req: http.Request{
-						...app.Context.req
-						url: url
-					}
-				}
-
-				// run method, resulting html should be in `app.s_html`
-				app.$method()
-				if verify_app_method_result(mut app, method.name) {
-					mut index_f := os.create(file_path)!
-					index_f.write(app.s_html.bytes())!
-					index_f.close()
-
-					// reset app
-					app.s_html = ''
-					$if T is SEOInterface {
-						app.seo = initial_seo
-					}
-
-					i_end := time.ticks()
-					println('[Vaunt] Generated page "${output_file}" in ${i_end - i_start}ms')
+				urls << generate_normal_route[T](mut app, dist_path, settings, initial_seo,
+					method) or {
+					eprintln(err)
+					return
 				}
 			}
 		}
@@ -177,36 +140,27 @@ fn start_site_generation[T](mut app T, output_dir string) ! {
 
 	// sitemap.xml
 	$if T is SEOInterface {
-		println('[Vaunt] Generating sitemap.xml...')
-
-		if app.seo.website_url == '' {
-			println('warning: `SEO.website_url` is not set! Skipping sitemap.xml')
-		} else {
-			mut sitemap_urls := [app.seo.website_url]
-			for url in urls {
-				if url == 'index.html' {
-					continue
-				}
-
-				mut website_url := app.seo.website_url
-				if app.seo.website_url.ends_with('/') == false {
-					// make sure the full url has a '/' after the website name
-					website_url += '/'
-				}
-
-				sitemap_urls << website_url + url
-			}
-			sitemap := generate_sitemap(sitemap_urls)
-
-			mut f := os.create(os.join_path(dist_path, 'sitemap.xml'))!
-			f.write_string(sitemap)!
-			f.close()
-		}
+		generate_sitemap_file[T](mut app, dist_path, urls)!
 	}
 
 	end := time.ticks()
 
 	println('[Vaunt] Done! Outputted your website to "${output_dir}" in ${end - start}ms')
+}
+
+fn generate_normal_route[T](mut app T, dist_path string, settings GenerateSettings, initial_seo SEO, method FunctionData) !string {
+	i_start := time.ticks()
+
+	route, url := get_route_url_from_method(method.name, method.attrs)
+
+	output_file := '${route}.html'
+
+	file_path := os.join_path(dist_path, output_file)
+	output_route_html[T](mut app, method.name, [], initial_seo, file_path, url)!
+
+	i_end := time.ticks()
+	println('[Vaunt] Generated page "${output_file}" in ${i_end - i_start}ms')
+	return output_file
 }
 
 fn generate_articles[T](mut app T, dist_path string) ![]string {
@@ -237,7 +191,8 @@ fn generate_articles[T](mut app T, dist_path string) ![]string {
 		a_start := time.ticks()
 
 		// generate the article html
-		file_art := generate(article.block_data)
+		blocks := json.decode([]Block, article.block_data) or { []Block{} }
+		file_art := generate(blocks)
 
 		file_path, mut article_path := get_publish_paths(app.db, app.template_dir, article) or {
 			eprintln('warning: category of article "${article.name}" does not exist!')
@@ -381,6 +336,74 @@ fn generate_tags[T](mut app T, dist_path string) ![]string {
 	return urls
 }
 
+fn generate_sitemap_file[T](mut app T, dist_path string, urls []string) ! {
+	println('[Vaunt] Generating sitemap.xml...')
+
+	if app.seo.website_url == '' {
+		println('warning: `SEO.website_url` is not set! Skipping sitemap.xml')
+	} else {
+		mut sitemap_urls := [app.seo.website_url]
+		for url in urls {
+			if url == 'index.html' {
+				continue
+			}
+
+			mut website_url := app.seo.website_url
+			if app.seo.website_url.ends_with('/') == false {
+				// make sure the full url has a '/' after the website name
+				website_url += '/'
+			}
+
+			sitemap_urls << website_url + url
+		}
+		sitemap := generate_sitemap(sitemap_urls)
+
+		mut f := os.create(os.join_path(dist_path, 'sitemap.xml'))!
+		f.write_string(sitemap)!
+		f.close()
+	}
+}
+
+fn output_route_html[T](mut app T, method_name string, method_args []string, initial_seo SEO, file_path string, url string) ! {
+	// make dirs for nested routes
+	os.mkdir_all(os.dir(file_path))!
+
+	// change app.req.url according to the current route
+	app.Context = vweb.Context{
+		...app.Context
+		req: http.Request{
+			...app.Context.req
+			url: url
+		}
+	}
+
+	// run method, resulting html should be in `app.s_html`
+	$for method in T.methods {
+		if method.name == method_name {
+			if method.args.len != method_args.len {
+				return error('[Vaunt] Error: wrong number of arguments for method "${method.name}" expected ${method.args.len} got ${method_args.len}. Arguments on vweb routes are only allowed if the route is dynamic!${std_err_msg}')
+			}
+
+			if method_args.len > 0 {
+				app.$method(method_args)
+			} else {
+				app.$method()
+			}
+		}
+	}
+	if verify_app_method_result(mut app, method_name) {
+		mut index_f := os.create(file_path)!
+		index_f.write(app.s_html.bytes())!
+		index_f.close()
+
+		// reset app
+		app.s_html = ''
+		$if T is SEOInterface {
+			app.seo = initial_seo
+		}
+	}
+}
+
 // verify_app_method_result checks if the app route returned a valid result. Only 200 status
 // codes and no empty values of `s_html`
 fn verify_app_method_result[T](mut app T, method_name string) bool {
@@ -415,4 +438,28 @@ fn validate_route_http_method(attrs []string) bool {
 	}
 
 	return true
+}
+
+fn get_route_url_from_method(method_name string, attrs []string) (string, string) {
+	mut route := method_name
+	mut url := '/${route}'
+
+	// get route name from attributes if any
+	for attr in attrs {
+		if attr.starts_with('/') == false {
+			continue
+		}
+		route = attrs[0]
+
+		// add index pages for routes like "/" -> "index.html" or "/pages/" -> "pages/index.html
+		url = route
+		if route.ends_with('/') {
+			route += 'index'
+		}
+
+		// skip leading "/"
+		route = route[1..]
+	}
+
+	return route, url
 }

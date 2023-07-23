@@ -6,30 +6,34 @@ import vaunt
 import json
 
 const (
-	sport                  = 12381
-	sport2                 = 12382
-	localserver            = '127.0.0.1:${sport}'
-	exit_after_time        = 12000 // milliseconds
-	vexe                   = os.getenv('VEXE')
-	serverexe              = os.join_path(os.cache_dir(), 'vaunt_generation_test_server.exe')
-	db_file                = os.join_path(os.cache_dir(), 'vaunt_generation_test.db')
+	sport                      = 12381
+	sport2                     = 12382
+	localserver                = '127.0.0.1:${sport}'
+	exit_after_time            = 12000 // milliseconds
+	vexe                       = os.getenv('VEXE')
+	serverexe                  = os.join_path(os.cache_dir(), 'vaunt_generation_test_server.exe')
+	db_file                    = os.join_path(os.cache_dir(), 'vaunt_generation_test.db')
 
-	output_dir             = os.abs_path('tests/public')
-	static_dir             = os.abs_path('tests/static')
-	upload_dir             = os.abs_path('tests/uploads')
+	output_dir                 = os.abs_path('tests/public')
+	static_dir                 = os.abs_path('tests/static')
+	upload_dir                 = os.abs_path('tests/uploads')
+	md_dir                     = os.abs_path('tests/md') // where you want to markdown files
 
-	jwt_token              = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwIiwibmFtZSI6ImFkbWluIiwiaWF0IjoxNjg0MDkwMTgwfQ.OJvgvMZ2uS6odHQ6vfp9zMnV765ssH4bjcppDKUxS9k'
+	jwt_token                  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwIiwibmFtZSI6ImFkbWluIiwiaWF0IjoxNjg0MDkwMTgwfQ.OJvgvMZ2uS6odHQ6vfp9zMnV765ssH4bjcppDKUxS9k'
 
-	article_names          = ['normal', 'with space', 'differentCaps', 'without category']
-	category_names         = ['web', 'category space', 'categoryCaps', '']
-	correct_article_names  = ['normal', 'with-space', 'differentcaps', 'without-category']
-	correct_category_names = ['web', 'category-space', 'categorycaps', '']
-	no_show_article        = 'show'
+	article_names              = ['normal', 'with space', 'differentCaps', 'without category']
+	category_names             = ['web', 'category space', 'categoryCaps', '']
+	correct_article_names      = ['normal', 'with-space', 'differentcaps', 'without-category']
+	correct_category_names     = ['web', 'category-space', 'categorycaps', '']
+	no_show_article            = 'show'
 
-	tag_names              = ['first s', 'SeCond']
-	correct_tag_names      = ['first-s', 'second']
+	tag_names                  = ['first s', 'SeCond']
+	correct_tag_names          = ['first-s', 'second']
 
-	seo_url                = 'https://example.com'
+	dynamic_arguments          = ['a', 'b', 'c']
+	multiple_dynamic_arguments = [['1', 'a'], ['2', 'b'], ['3', 'c']]
+
+	seo_url                    = 'https://example.com'
 )
 
 // setup of vaunt webserver
@@ -85,9 +89,6 @@ fn test_generate_succeeds() {
 
 	// test empty page warning
 	assert result.output.contains('warning: method "empty" produced no html! Did you forget to set `app.s_html`?') == true
-
-	// test dynamic route warning
-	assert result.output.contains('error while generating "custom_dynamic": generating custom dynamic routes is not supported yet!') == true
 }
 
 fn test_file_and_folder_names() {
@@ -161,10 +162,37 @@ fn test_nested_index() {
 	assert contents == 'nested index'
 }
 
-fn test_no_custom_dynamic() {
-	files := os.ls(os.join_path(output_dir, 'nested'))!
+fn test_single_dynamic() {
+	for arg in dynamic_arguments {
+		file := os.join_path(output_dir, 'dyn', '${arg}.html')
 
-	assert files.len == 1
+		assert os.exists(file) == true
+		contents := os.read_file(file)!
+		assert contents == arg
+	}
+}
+
+fn test_multiple_dynamics() {
+	for args in multiple_dynamic_arguments {
+		file := os.join_path(output_dir, 'mult', args[0], '${args[1]}.html')
+
+		assert os.exists(file) == true
+		contents := os.read_file(file)!
+		assert contents == args.join('/')
+	}
+}
+
+fn test_markdown_routes() {
+	// just check if the files exists and they are not empty
+	files := os.walk_ext(md_dir, '.md')
+	for file in files {
+		raw_path := file.replace(md_dir, '').replace('.md', '.html')
+		path := os.join_path(output_dir, 'md', raw_path[1..])
+		assert os.exists(path) == true
+
+		contents := os.read_file(path)!
+		assert contents.len > 0
+	}
 }
 
 fn test_only_methods_with_get() {

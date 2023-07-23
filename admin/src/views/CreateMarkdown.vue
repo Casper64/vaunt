@@ -45,13 +45,14 @@ const categoryOptions = computed(() => {
         <p>Note that not all markdown elements are supported!<br>Currently the following elements are supported:</p>
         <ul>
             <li>paragraphs</li>
-            <li>h1-h3</li>
-            <li>links, bold text</li>
+            <li>h1-h6</li>
+            <li>Inline elements such as: links, bold/italic text, colored text</li>
             <li>images (the src and alt attributes will be copied)</li>
-            <li>code blocks and inline code</li>
+            <li>code blocks and inline code blocks</li>
             <li>non-nested lists</li>
-            <li>quotes</li>
+            <li>blockquotes</li>
             <li>tables</li>
+            <li>alerts from github's markdown > **Note**</li>
         </ul>
         <!-- 25em is the default max width of FormKit -->
         <FormKit 

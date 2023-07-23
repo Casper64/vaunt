@@ -13,14 +13,14 @@
 ## 0.3
 - [X] Article "tags"
 - [X] Add authentication system, so it's possible to have the server and editor online.
-- [X] Import markdown feature
+- [X] Import & Edit markdown feature
 - [X] Make CMS backend optional, so it is possible to only use Vaunt as static site generator
 - [X] Support for all databases in the `db` module
-- [ ] Add layout blocks
-- [ ] Reference article block
+- [X] Allow custom dynamic routes
+- [ ] Add more blocks (currently new: alerts)
 - [ ] Documentation theme
 - [ ] Vaunt docs website
 
-## Future 
+## Future / Maybes
 - [ ] Allow custom blocks
 - [ ] Documentation website generator like `v doc`. Content will be editable in the frontend editor. 

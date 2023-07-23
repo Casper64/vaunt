@@ -15,9 +15,8 @@ pub:
 	data       string [required]
 }
 
-pub fn generate(data string) string {
-	blocks := json.decode([]Block, data) or { []Block{} }
-
+// generate returns the html form of `blocks`.
+pub fn generate(blocks []Block) string {
 	mut html := ''
 
 	for idx, block in blocks {

@@ -30,7 +30,7 @@ fn main() {
 	spawn exit_after_timeout(timeout)
 
 	mut app := &App{}
-	vaunt.start(mut app, http_port)!
+	vaunt.start(mut app, http_port, vaunt.GenerateSettings{})!
 }
 
 pub fn (mut app App) index() vweb.Result {

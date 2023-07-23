@@ -82,7 +82,7 @@ pub struct RunParams {
 	show_startup_message bool   = true
 }
 
-pub fn start[T](mut app T, port int, params RunParams) ! {
+pub fn start[T](mut app T, port int, generate_settings GenerateSettings, params RunParams) ! {
 	mut fp := flag.new_flag_parser(os.args)
 	fp.application('Vaunt')
 	fp.version('0.2')
@@ -101,7 +101,7 @@ pub fn start[T](mut app T, port int, params RunParams) ! {
 
 	if f_generate {
 		app.dev = false
-		start_site_generation[T](mut app, f_output)!
+		start_site_generation[T](mut app, f_output, generate_settings)!
 		return
 	}
 

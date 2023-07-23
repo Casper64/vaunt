@@ -663,7 +663,7 @@ pub fn (mut app Api) publish_article() vweb.Result {
 	}
 
 	article := rows[0]
-	blocks := article.block_data
+	blocks := json.decode([]Block, article.block_data) or { []Block{} }
 	file := generate(blocks)
 
 	// set file path accordingly when article has a category or not

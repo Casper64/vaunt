@@ -3,6 +3,17 @@ module vaunt
 import json
 import markdown
 import net.html
+import os
+
+// get_html_from_markdown converts the markdown file at `folder/path` into html
+pub fn get_html_from_markdown(md_dir string, path string) !string {
+	r_path := if path.ends_with('.md') { path } else { '${path}.md' }
+	dump(r_path)
+	mut file := os.join_path(md_dir, r_path)
+	md := os.read_file(file)!
+	blocks := get_blocks_from_markdown(md)
+	return generate(blocks) // blocks.v
+}
 
 // get_blocks_from_markdown converts the markdown string `md` to Vaunt blocks.
 // These blocks can be added to an article if they are JSON encoded.
@@ -30,6 +41,15 @@ fn generate_blocks(elements []&html.Tag) []Block {
 			}
 			'h3' {
 				blocks << insert_heading(tag, 3)
+			}
+			'h4' {
+				blocks << insert_heading(tag, 4)
+			}
+			'h5' {
+				blocks << insert_heading(tag, 5)
+			}
+			'h6' {
+				blocks << insert_heading(tag, 6)
 			}
 			'p' {
 				if tag.children.len > 0 && tag.children[0].name == 'img' {

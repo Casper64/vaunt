@@ -9,6 +9,7 @@ import time
 const (
 	template_dir = os.abs_path('tests/templates') // where you want to store templates
 	upload_dir   = os.abs_path('tests/uploads') // where you want to store uploads
+	md_dir       = os.abs_path('tests/md') // where you want to markdown files
 )
 
 struct Theme {}
@@ -71,8 +72,22 @@ fn main() {
 	// serve all css files from 'static'
 	app.handle_static('tests/static', true)
 
+	settings := vaunt.GenerateSettings{
+		dynamic_routes: {
+			'custom_dynamic':       vaunt.DynamicRoute{
+				arguments: ['a', 'b', 'c']
+			}
+			'multiple_dynamics':    vaunt.MultipleDynamicRoute{
+				arguments: [['1', 'a'], ['2', 'b'], ['3', 'c']]
+			}
+			'from_markdown_folder': vaunt.MarkdownDynamicRoute{
+				md_dir: md_dir
+			}
+		}
+	}
+
 	// start the Vaunt server
-	vaunt.start(mut app, http_port)!
+	vaunt.start(mut app, http_port, settings)!
 }
 
 pub fn (mut app App) before_request() {
@@ -129,11 +144,26 @@ pub fn (mut app App) nested_index() vweb.Result {
 	return app.html('nested index')
 }
 
-// disallow dynamic routes
-['/nested/:dynamic']
+['/dyn/:dynamic']
 pub fn (mut app App) custom_dynamic(dynamic string) vweb.Result {
 	app.s_html = dynamic
-	return app.html(dynamic)
+	return app.html(app.s_html)
+}
+
+['/mult/:a/:b']
+pub fn (mut app App) multiple_dynamics(a string, b string) vweb.Result {
+	app.s_html = '${a}/${b}'
+	return app.html(app.s_html)
+}
+
+['/md/:path...']
+pub fn (mut app App) from_markdown_folder(path string) vweb.Result {
+	raw_html := vaunt.get_html_from_markdown(md_dir, path) or {
+		// markdown file does not exist
+		return app.not_found()
+	}
+	app.s_html = raw_html
+	return app.html(app.s_html)
 }
 
 ['/posting'; post]

@@ -106,7 +106,7 @@ fn main() {
 	// serve all css files from 'static'
 	app.handle_static('static', true)
 	// start the Vaunt server
-	vaunt.start(mut app, 8080)!
+	vaunt.start(mut app, 8080, vaunt.GenerateSettings{})!
 }
 
 pub fn (mut app App) before_request() {
@@ -151,7 +151,7 @@ pub mut:
 
 fn main() {
 	mut app := &App{}
-	vaunt.start(mut app, 8080)!
+	vaunt.start(mut app, 8080, vaunt.GenerateSettings{})!
 }
 
 pub fn (mut app App) index() vweb.Result {
@@ -198,9 +198,38 @@ app.is_superuser = vaunt.is_superuser(mut app.Context, app_secret)
 You can put either one of these functions in `pub fn (mut app App) before_request()`
 to enable them for your whole app. Or call them in individual routes.
 
-### Caveats
-When you generate the site all forms of authentication will be skipped,
+### Authentitcation Caveats
+When you generate the site all forms of authentication and middleware 
+(with the exception of `before_request`)will be skipped,
 except if you return early.
+
+### Usage
+
+The admin panel should be self-explanatory. You can press the `create article` button to
+create a new article and get into the block editor. If you hit `publish` in the right nav
+the html for your article will be generated.
+
+### Markdown
+
+You can import any markdown file into Vaunt and edit it as "blocks". Just hit the
+`import markdown` button and follow the steps.
+
+The imported markdown is not properly sanitized! The end user is responsible.
+
+#### Currently supported markdown elements
+
+- paragraphs
+- h1-h6
+- Inline elements such as: links, bold/italic text, colored text
+- images (the src and alt attributes will be copied)
+- code blocks and inline code blocks
+- non-nested lists
+- blockquotes
+- tables
+- alerts from github's markdown notes: `> **Note**`
+
+Some raw html might slip by the basic sanitizer. If so you have to manually remove
+them in the editor.
 
 ## Routing
 When creating a route the html that is returned must be saved in `app.s_html`
@@ -289,7 +318,9 @@ Index routes (or routes ending with a "/") will have `index.html` as ending.
 So the route `/nested/` will put the html file at `nested/index.html`.
 
 #### Dynamic routes
-Currently custom dynamic routes are not supported.
+
+Vaunt works with dynamic routes, but you have to provide values of the dynamic arguments.
+See the [generating dynamic routes] section.
 
 ## Generate
 You can generate the static site by passing the `--generate` flag or `-g` for short.
@@ -316,12 +347,166 @@ the passed route when the app is being generated.
 <a href="@{app.url('/my-page')}">My page</a>
 ```
 
-> **Note**
-> Don't add the quotes `""` in the href attribute!
-
-**Result:**
+**Result (when generated):**
 ```html
 <a href="/my-page.html">My page</a>
+```
+
+### Dynamic routes (parameters)
+
+Vaunt distincts two kinds of dynamic routes (vweb routes with parameters e.g. `"/path/:arg"`).
+Routes with one argument and routes with multiple arguments
+
+#### Single parameter routes
+
+If we have a dynamic route with one parameter on our app.
+
+```v
+['/dyn/:dynamic']
+pub fn (mut app App) custom_dynamic(dynamic string) vweb.Result {
+	app.s_html = dynamic
+	return app.html(app.s_html)
+}
+```
+
+We have to specify what the values of `dynamic` will be when the site is being generated.
+
+We provide these settings to `vaunt.start`
+
+**Example:**
+```v 
+// main function
+// ...
+
+settings := vaunt.GenerateSettings{
+	// `dynamic_routes` is a map. The key is the method name and the value is the kind of 
+	// dynamic route
+	dynamic_routes: {
+		'custom_dynamic': vaunt.DynamicRoute{
+			arguments: ['a', 'b', 'c']
+		}
+	}
+}
+
+vaunt.start(mut app, 8080, settings)!
+```
+
+This will output 3 files with their content being 'a', 'b' and 'c', respectively.
+```
+public/
+└── dyn/
+    ├── a.html
+    ├── b.html
+    └── c.html
+```
+
+#### Multiple paremeter routes
+
+Let's see the case where we have multiple parameters in one route.
+
+```v
+['/mult/:a/:b']
+pub fn (mut app App) multiple_dynamics(a string, b string) vweb.Result {
+	app.s_html = '${a}/${b}'
+	return app.html(app.s_html)
+}
+```
+
+Now we have two supply the arguments as an array of strings.
+
+**Example**:
+```v
+// main function
+// ...
+
+
+settings := vaunt.GenerateSettings{
+	dynamic_routes: {
+		'multiple_dynamics': vaunt.MultipleDynamicRoute{
+			arguments: [['1', 'a'], ['2', 'b'], ['3', 'c']]
+		}
+	}
+}
+
+vaunt.start(mut app, 8080, settings)!
+```
+
+This will produce the following folder structure:
+
+```
+public/
+└── mult/
+    ├── 1/
+    │   └── a.html
+    ├── 2/
+    │   └── b.html
+    └── 3/
+        └── c.html
+```
+
+### Serving markdown from a folder
+
+It is also possible to serve markdown files from one folder. We can use 
+`vaunt.get_html_from_markdown` to convert the markdown files to html in our route.
+
+**Example:**
+```v
+const (
+	// the directory containg the markdown files
+	md_dir = 'md'
+)
+
+// the `...` after the parameter indicates that we want our parameter to match all routes after
+// `"/md"` including any '/' characters
+['/md/:path...']
+pub fn (mut app App) from_markdown_folder(path string) vweb.Result {
+	// `get_html_from_markdown` converts a markdown file to vaunt blocks and back into html.
+	// It fails if the `path` doesn't have the ".md" extension
+	raw_html := vaunt.get_html_from_markdown(md_dir, path) or {
+		// markdown file does not exist
+		return app.not_found()
+	}
+	app.s_html = raw_html
+	return app.html(app.s_html)
+}
+```
+
+We have to indicate to vaunt that `from_markdown_folder` is a dynamic route that
+serves markdown files from a folder, so it can be generated accordingly.
+
+**Example:**
+
+```v
+// main function
+// ...
+
+
+settings := vaunt.GenerateSettings{
+	dynamic_routes: {
+		'from_markdown_folder': vaunt.MarkdownDynamicRoute{
+			md_dir: md_dir
+		}
+	}
+}
+
+vaunt.start(mut app, 8080, settings)!
+```
+
+`MarkdownDynamicRoute` will search the `md_dir` folder recursively and passes any markdown 
+files (with the ".md" extension) as an argument to `from_markdown_folder`.
+
+This would be the resulting folder structure when our app is generated:
+
+```
+md/
+├── index.md
+└── docs/
+    └── docs.md
+public/
+└── md/
+    ├── index.html
+    └── docs/
+        └── docs.html
 ```
 
 ## Search Engine Optimization (SEO)
@@ -675,13 +860,64 @@ pub fn (u &Util) get_tag_by_id(id int) !Tag
 
 ## Api
 
+### Blocks
+
+See [blocks.v](src/blocks.v) for the JSON representation of each block.
+
+```v ignore
+// generate returns the html form of `blocks`.
+pub fn generate(blocks []Block) string
+```
+
+### Markdown
+
+> "Why would I use Vaunt if I could just import the `mardown` module?"
+
+Vaunt wraps the html in it's own blocks, which are easier to style and it adds more metadeta
+to the blocks, like an id on heading tags. So you can keep the same style for imported
+markdown files in the editor and markdown files you serve as raw html.
+
+```v ignore
+// get_html_from_markdown converts the markdown file at `folder/path` into html
+pub fn get_html_from_markdown(md_dir string, path string) !string
+
+// get_blocks_from_markdown converts the markdown string `md` to Vaunt blocks.
+// These blocks can be added to an article if they are JSON encoded.
+pub fn get_blocks_from_markdown(md string) []Block
+```
+
+#### Converting markdown to html
+Example workflow to convert a markdown file to Vaunt blocks and convert that into html.
+
+```v
+module main
+
+import os
+import vaunt
+
+fn main() {
+	markdown_file := 'vaunt.md'
+	// get the file contents
+	md := os.read_file(markdown_file)!
+	// get the blocks
+	blocks := vaunt.get_blocks_from_markdown(md)
+	// get html from markdown
+	html := vaunt.generate(blocks)
+	html_file := 'vaunt.html'
+	os.write_file(html_file, html)!
+}
+```
+
+You could substite the code in the `main` function into a vweb route. See 
+[generating from markdown](#converting-markdown-to-html) for an example.
+
 ### Vweb Config
 You can edit the vweb configuration in `vaunt.start`
 
 **Example:**
 
 ```v
-vaunt.start(mut app, 8080, host: '0.0.0.0', nr_workers: 4)
+vaunt.start(mut app, 8080, vaunt.GenerateSettings{}, host: '0.0.0.0', nr_workers: 4)
 ```
 
 ```v

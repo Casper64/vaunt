@@ -64,7 +64,7 @@ fn main() {
 	app.handle_static('tests/static', true)
 
 	// start the Vaunt server
-	vaunt.start(mut app, http_port)!
+	vaunt.start(mut app, http_port, vaunt.GenerateSettings{})!
 }
 
 pub fn (mut app App) before_request() {
