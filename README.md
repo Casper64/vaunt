@@ -771,7 +771,7 @@ templates, except for the functions that return a `Result` type.
 
 ```v
 // url adds '.html' after the url if the site is being generated 
-// usage: `href="@{app.url('/my-page')} "`
+// usage: `href="@{app.url('/my-page')}"`
 pub fn (u &Util) url(url string) vweb.RawHtml
 
 // get the correct url in your templates

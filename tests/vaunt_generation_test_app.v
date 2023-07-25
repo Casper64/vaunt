@@ -9,7 +9,7 @@ import time
 const (
 	template_dir = os.abs_path('tests/templates') // where you want to store templates
 	upload_dir   = os.abs_path('tests/uploads') // where you want to store uploads
-	md_dir       = os.abs_path('tests/md') // where you want to markdown files
+	md_dir       = os.abs_path('tests/md') // where you want to serve markdown files from
 )
 
 struct Theme {}

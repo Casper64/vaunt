@@ -8,7 +8,6 @@ import os
 // get_html_from_markdown converts the markdown file at `folder/path` into html
 pub fn get_html_from_markdown(md_dir string, path string) !string {
 	r_path := if path.ends_with('.md') { path } else { '${path}.md' }
-	dump(r_path)
 	mut file := os.join_path(md_dir, r_path)
 	md := os.read_file(file)!
 	blocks := get_blocks_from_markdown(md)

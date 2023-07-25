@@ -76,7 +76,7 @@ pub fn (u &Util) html_picture_from_image(img_id int) vweb.RawHtml {
 }
 
 // url adds '.html' after the url if the site is being generated
-// usage: `href="@{app.url('/my-page')} "`
+// usage: `href="@{app.url('/my-page')}"`
 pub fn (u &Util) url(url string) vweb.RawHtml {
 	if u.dev {
 		return '${url}'
