@@ -21,6 +21,7 @@ contain any code used in this repository.
 - Admin panel and visual block editor for content creation
 - User configurable themes
 - Image uploads automatically generate small, medium and large sizes
+- Serve, include, import & edit markdown files
 
 See [only use static generator](#only-static-generator) if you only want to convert your vweb 
 application into a static website and don't need the admin panel.
@@ -884,6 +885,20 @@ pub fn get_html_from_markdown(md_dir string, path string) !string
 // get_blocks_from_markdown converts the markdown string `md` to Vaunt blocks.
 // These blocks can be added to an article if they are JSON encoded.
 pub fn get_blocks_from_markdown(md string) []Block
+```
+
+#### Including markdown files
+You can include markdown files into your templates with `Util.include_md`
+
+```v
+// include_md returns the html for the markdown in `file`
+// usage: `@{app.include('path/to/file.md')}`
+pub fn (u &Util) include_md(file string) vweb.RawHtml
+```
+
+**Example:**
+```v
+@{app.include_md('test.md')}
 ```
 
 #### Converting markdown to html

@@ -19,6 +19,9 @@ pub mut:
 	s_html       string // used by Vaunt to generate html
 }
 
+// 		Template & Article stuff
+// ==================================
+
 // get the correct url in your templates
 // usage: `href="@{app.article_url(article)} "`
 pub fn (u &Util) article_url(article Article) vweb.RawHtml {
@@ -34,9 +37,17 @@ pub fn (u &Util) article_url(article Article) vweb.RawHtml {
 
 // article_html returns the html for that article
 pub fn (u &Util) article_html(article_name string, template_dir string) !vweb.RawHtml {
+	article := u.get_article_by_name(article_name)!
+	if article.category_id != 0 {
+		cat := u.get_category_by_id(article.category_id)!
+		category_name := sanitize_path(cat.name)
+		return u.category_article_html(category_name, article_name, template_dir)!
+	}
+
+	name := sanitize_path(article_name)
 	// If you press the `publish` button in the admin panel the html will be generated
 	// and outputted to  `"[template_dir]/articles/[article_name].html"`.
-	mut article_file := os.join_path(template_dir, 'articles', '${article_name}.html')
+	mut article_file := os.join_path(template_dir, 'articles', '${name}.html')
 
 	// read the generated article html file
 	return os.read_file(article_file)!
@@ -44,9 +55,11 @@ pub fn (u &Util) article_html(article_name string, template_dir string) !vweb.Ra
 
 // category_article_html returns the html for that article with category
 pub fn (u &Util) category_article_html(category_name string, article_name string, template_dir string) !vweb.RawHtml {
+	a_name := sanitize_path(article_name)
+	name := sanitize_path(category_name)
 	// If you press the `publish` button in the admin panel the html will be generated
 	// and outputted to  `"[template_dir]/articles/[category_name]/[article_name].html"`.
-	mut article_file := os.join_path(template_dir, 'articles', category_name, '${article_name}.html')
+	mut article_file := os.join_path(template_dir, 'articles', name, '${a_name}.html')
 
 	// read the generated article html file
 	return os.read_file(article_file)!
@@ -85,6 +98,22 @@ pub fn (u &Util) url(url string) vweb.RawHtml {
 			return '${url}index.html'
 		}
 		return '${url}.html'
+	}
+}
+
+// include_md returns the html for the markdown in `file`
+// usage: `@{app.include('path/to/file.md')}`
+pub fn (u &Util) include_md(file string) vweb.RawHtml {
+	if os.exists(file) {
+		md := os.read_file(file) or {
+			eprintln(err)
+			''
+		}
+		blocks := get_blocks_from_markdown(md)
+		return generate(blocks) // blocks.v
+	} else {
+		eprintln('[Vaunt] Error at "include_markdown": file ${file} does not exist! Working dir: ${os.getwd()}')
+		return ''
 	}
 }
 
