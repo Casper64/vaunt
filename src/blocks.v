@@ -67,7 +67,8 @@ pub:
 
 pub fn generate_heading(block &Block, block_index int) string {
 	data := json.decode(HeadingData, block.data) or { HeadingData{} }
-	id_name := sanitize_path(data.text) + '-' + block_index.str()
+	data_id := sanitize_path(data.text)
+	id_name := data_id + '-' + block_index.str()
 
 	if data.level == 1 {
 		return $tmpl('./templates/blocks/h1.html')

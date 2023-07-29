@@ -350,7 +350,7 @@ So the route `/nested/` will put the html file at `nested/index.html`.
 #### Dynamic routes
 
 Vaunt works with dynamic routes, but you have to provide values of the dynamic arguments.
-See the [generating dynamic routes] section.
+See the [generating dynamic routes](#dynamic-routes) section.
 
 ## Generate
 You can generate the static site by passing the `--generate` flag or `-g` for short.
@@ -385,7 +385,7 @@ the passed route when the app is being generated.
 ### Dynamic routes (parameters)
 
 Vaunt distincts two kinds of dynamic routes (vweb routes with parameters e.g. `"/path/:arg"`).
-Routes with one argument and routes with multiple arguments
+Routes with one argument and routes with multiple arguments.
 
 #### Single parameter routes
 
@@ -582,9 +582,10 @@ pub fn (mut app App) article_page(article_name string) vweb.Result {
 	article := vaunt.get_article_by_name(app.db, article_name) or { return app.not_found() }
 	// set seo
 	app.seo.set_article(article, app.req.url)
+	content := app.article_html(article_name, template_dir) or { return app.not_found() }
 
 	// save html in `app.s_html` first before returning it
-	app.s_html = app.article_html(article_name, template_dir) or { return app.not_found() }
+	app.s_html = content
 	return app.html(content)
 }
 ```
@@ -797,8 +798,6 @@ templates, except for the functions that return a `Result` type.
 ```
 ### Templates
 
-(due to a bug in v you need to add an extra space before the last ")
-
 ```v
 // url adds '.html' after the url if the site is being generated 
 // usage: `href="@{app.url('/my-page')}"`
@@ -824,8 +823,16 @@ pub fn (u &Util) html_picture_from_article_thumbnail(article Article) vweb.RawHt
 #### Table of Contents
 
 All heading blocks in vaunt have an id in the same way github markdown generates id's
-for headings. A `h1` tag with the text "This is a header" will have an id of "this-is-a-header".
-We can use these id's to generate a table of contents for each article.
+for headings. A `h1` tag with the text "This is a header" will have an id of
+"this-is-a-header-${index of block}". We can use these id's to generate a table of contents
+for each article.
+
+The raw id without the block index is available as data attribute `rawid`.
+
+**Generated example**:
+```html
+<h1 id="this-is-a-header-0" data-rawid="this-is-a-header">This is a header</h1>
+```
 
 You can either get a default template, or the Block data to generate a table of contents yourself.
 
