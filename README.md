@@ -71,7 +71,7 @@ const (
 )
 
 // Your theme settings
-struct Theme{}
+struct Theme {}
 
 // Base app for Vaunt which you can extend
 struct App {
@@ -79,20 +79,20 @@ struct App {
 	vweb.Controller
 	vaunt.Util
 pub:
-	template_dir string                 [vweb_global]
-	upload_dir   string                 [vweb_global]
+	template_dir string [vweb_global]
+	upload_dir   string [vweb_global]
 pub mut:
-	dev    bool   [vweb_global] // used by Vaunt internally
-	db     sqlite.DB
-	theme  Theme // Theme settings
+	dev   bool      [vweb_global] // used by Vaunt internally
+	db    sqlite.DB
+	theme Theme // Theme settings
 }
 
 fn main() {
 	// insert your own database
 	db := sqlite.connect('app.db')!
-	
+
 	theme := Theme{}
-	
+
 	// setup database and controllers
 	controllers := vaunt.init(db, template_dir, upload_dir, theme, app_secret)!
 
@@ -104,7 +104,7 @@ fn main() {
 		controllers: controllers
 	}
 
-	// serve all css files from 'static'
+	// serve all css files from 'static' (optional)
 	app.handle_static('static', true)
 	// start the Vaunt server
 	vaunt.start(mut app, 8080, vaunt.GenerateSettings{})!
@@ -113,6 +113,12 @@ fn main() {
 pub fn (mut app App) before_request() {
 	// copy database connection to Util
 	app.Util.db = app.db
+}
+
+pub fn (mut app App) index() vweb.Result {
+	content := 'Hello!'
+	app.s_html = content
+	return app.html(content)
 }
 ```
 
@@ -159,6 +165,29 @@ pub fn (mut app App) index() vweb.Result {
 	// save html in `app.s_html` first before returning it
 	app.s_html = 'index'
 	return app.html(app.s_html)
+}
+```
+
+### Tips
+
+If you don't want to add the `Util` struct to your app it's recommended to copy the
+`url` function into your app so when generating your app `.html` get's added correctly
+after the urls.
+
+`src/util.v`
+
+```v
+// url adds '.html' after the url if the site is being generated
+// usage: `href="@{app.url('/my-page')}"`
+pub fn (u &Util) url(url string) vweb.RawHtml {
+	if u.dev {
+		return '${url}'
+	} else {
+		if url.ends_with('/') {
+			return '${url}index.html'
+		}
+		return '${url}.html'
+	}
 }
 ```
 
