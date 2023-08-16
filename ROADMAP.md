@@ -18,9 +18,11 @@
 - [X] Support for all databases in the `db` module
 - [X] Allow custom dynamic routes
 - [ ] Add more blocks (currently new: alerts)
+- [ ] Redesign admin panel for mobile use
 - [ ] Documentation theme
 - [ ] Vaunt docs website
 
 ## Future / Maybes
+- [ ] Add custom Structs to the admin panel & integrate them with the block editor
 - [ ] Allow custom blocks
 - [ ] Documentation website generator like `v doc`. Content will be editable in the frontend editor. 
