@@ -137,13 +137,13 @@ fn to_seperate_rgb(hex_color string) string {
 // Theme Api routes:
 struct ThemeHandler {
 	vweb.Context
-	secret string [vweb_global]
+	secret string @[vweb_global]
 pub:
 	middlewares map[string][]vweb.Middleware = {
 		'/': [cors]
 	}
 pub mut:
-	db orm.Connection [required; vweb_global]
+	db orm.Connection @[required; vweb_global]
 }
 
 pub fn (mut app ThemeHandler) before_request() {
@@ -152,7 +152,7 @@ pub fn (mut app ThemeHandler) before_request() {
 	}
 }
 
-['/'; get; options]
+@['/'; get; options]
 pub fn (mut app ThemeHandler) theme() vweb.Result {
 	options := sql app.db {
 		select from ThemeOption
@@ -160,7 +160,7 @@ pub fn (mut app ThemeHandler) theme() vweb.Result {
 	return app.json(options)
 }
 
-['/color'; get; options]
+@['/color'; get; options]
 pub fn (mut app ThemeHandler) get_all_colors() vweb.Result {
 	options := sql app.db {
 		select from ThemeOption where option_type == 'Color'
@@ -174,7 +174,7 @@ pub fn (mut app ThemeHandler) get_all_colors() vweb.Result {
 	return app.json(colors)
 }
 
-['/color'; post]
+@['/color'; post]
 pub fn (mut app ThemeHandler) set_all_colors() vweb.Result {
 	colors := json.decode(map[string]string, app.req.data) or {
 		map[string]string{}
@@ -192,7 +192,7 @@ pub fn (mut app ThemeHandler) set_all_colors() vweb.Result {
 	return app.ok('')
 }
 
-['/color/:name'; get; options]
+@['/color/:name'; get; options]
 pub fn (mut app ThemeHandler) get_color(name string) vweb.Result {
 	color := sql app.db {
 		select from ThemeOption where name == name && option_type == 'Color'
@@ -206,7 +206,7 @@ pub fn (mut app ThemeHandler) get_color(name string) vweb.Result {
 	}
 }
 
-['/color/:name'; post]
+@['/color/:name'; post]
 pub fn (mut app ThemeHandler) set_color(name string) vweb.Result {
 	color := app.req.data
 
@@ -219,7 +219,7 @@ pub fn (mut app ThemeHandler) set_color(name string) vweb.Result {
 	return app.ok('')
 }
 
-['/classlist'; get; options]
+@['/classlist'; get; options]
 pub fn (mut app ThemeHandler) get_all_classlists() vweb.Result {
 	options := sql app.db {
 		select from ThemeOption where option_type == 'ClassList'
@@ -233,7 +233,7 @@ pub fn (mut app ThemeHandler) get_all_classlists() vweb.Result {
 	return app.json(classlists)
 }
 
-['/classlist'; post]
+@['/classlist'; post]
 pub fn (mut app ThemeHandler) set_all_classlists() vweb.Result {
 	classlists := json.decode(map[string]ClassList, app.req.data) or {
 		map[string]ClassList{}
@@ -252,7 +252,7 @@ pub fn (mut app ThemeHandler) set_all_classlists() vweb.Result {
 	return app.ok('')
 }
 
-['/classlist/:name'; get; options]
+@['/classlist/:name'; get; options]
 pub fn (mut app ThemeHandler) get_classlist(name string) vweb.Result {
 	classlist := sql app.db {
 		select from ThemeOption where name == name && option_type == 'ClassList'
@@ -267,7 +267,7 @@ pub fn (mut app ThemeHandler) get_classlist(name string) vweb.Result {
 	}
 }
 
-['/classlist/:name'; post]
+@['/classlist/:name'; post]
 pub fn (mut app ThemeHandler) set_classlist(name string) vweb.Result {
 	classlist := app.req.data
 	sql app.db {

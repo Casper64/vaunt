@@ -11,8 +11,8 @@ import vweb
 pub struct Block {
 pub:
 	id         string
-	block_type string [json: 'type']
-	data       string [required]
+	block_type string @[json: 'type']
+	data       string @[required]
 }
 
 // generate returns the html form of `blocks`.
@@ -171,7 +171,7 @@ pub fn get_html_picture_from_src(url string, alt string) vweb.RawHtml {
 pub struct EmbedData {
 pub:
 	service string
-	source  string [skip]
+	source  string @[skip]
 	embed   string
 	width   int
 	height  int
@@ -196,7 +196,7 @@ pub fn generate_quote(block &Block) string {
 
 pub struct TableData {
 pub mut:
-	with_headings bool       [json: withHeadings]
+	with_headings bool       @[json: withHeadings]
 	content       [][]string
 }
 

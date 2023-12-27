@@ -2,16 +2,15 @@ import os
 import time
 import net.http
 
-const (
-	sport           = 12383
-	sport2          = 12384
-	localserver     = '127.0.0.1:${sport}'
-	exit_after_time = 12000 // milliseconds
-	vexe            = os.getenv('VEXE')
-	serverexe       = os.join_path(os.cache_dir(), 'vaunt_stripped_test_server.exe')
+const sport = 12383
+const sport2 = 12384
+const localserver = '127.0.0.1:${sport}'
+const exit_after_time = 12000 // milliseconds
 
-	output_dir      = os.abs_path('tests/public')
-)
+const vexe = os.getenv('VEXE')
+const serverexe = os.join_path(os.cache_dir(), 'vaunt_stripped_test_server.exe')
+
+const output_dir = os.abs_path('tests/public')
 
 // setup of vaunt webserver
 fn testsuite_begin() {

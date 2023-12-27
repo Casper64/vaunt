@@ -6,20 +6,19 @@ import db.sqlite
 import vaunt
 import stbi
 
-const (
-	sport           = 12380
-	localserver     = '127.0.0.1:${sport}'
-	exit_after_time = 12000 // milliseconds
-	vexe            = os.getenv('VEXE')
-	serverexe       = os.join_path(os.cache_dir(), 'vaunt_test_server.exe')
-	db_file         = os.join_path(os.cache_dir(), 'vaunt_api_test.db')
+const sport = 12380
+const localserver = '127.0.0.1:${sport}'
+const exit_after_time = 12000 // milliseconds
 
-	vaunt_username  = 'admin'
-	jwt_token       = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwIiwibmFtZSI6ImFkbWluIiwiaWF0IjoxNjg0MDkwMTgwfQ.OJvgvMZ2uS6odHQ6vfp9zMnV765ssH4bjcppDKUxS9k'
+const vexe = os.getenv('VEXE')
+const serverexe = os.join_path(os.cache_dir(), 'vaunt_test_server.exe')
+const db_file = os.join_path(os.cache_dir(), 'vaunt_api_test.db')
 
-	v_logo          = 'tests/testdata/v-logo.png'
-	v_logo_name     = os.file_name(v_logo)
-)
+const vaunt_username = 'admin'
+const jwt_token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwIiwibmFtZSI6ImFkbWluIiwiaWF0IjoxNjg0MDkwMTgwfQ.OJvgvMZ2uS6odHQ6vfp9zMnV765ssH4bjcppDKUxS9k'
+
+const v_logo = 'tests/testdata/v-logo.png'
+const v_logo_name = os.file_name(v_logo)
 
 // setup of vaunt webserver
 fn testsuite_begin() {

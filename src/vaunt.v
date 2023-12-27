@@ -6,9 +6,7 @@ import orm
 import os
 import vweb
 
-const (
-	std_err_msg = '\nSee the docs for more information on required methods.'
-)
+const std_err_msg = '\nSee the docs for more information on required methods.'
 
 pub fn init[T](db orm.Connection, template_dir string, upload_dir string, theme &T, secret string) ![]&vweb.ControllerPath {
 	init_database(db)!
@@ -73,7 +71,7 @@ interface DbInterface {
 	db voidptr
 }
 
-[params]
+@[params]
 pub struct RunParams {
 	family               net.AddrFamily = .ip
 	host                 string = '127.0.0.1'
@@ -118,7 +116,11 @@ pub fn start[T](mut app T, port int, generate_settings GenerateSettings, params 
 	app.dev = !f_user
 
 	combined_params := vweb.RunParams{
-		...params
+		family: params.family
+		host: params.host
+		nr_workers: params.nr_workers
+		pool_channel_slots: params.pool_channel_slots
+		show_startup_message: params.show_startup_message
 		port: port
 	}
 

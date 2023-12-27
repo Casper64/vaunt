@@ -6,10 +6,8 @@ import os
 import db.sqlite
 import time
 
-const (
-	template_dir = os.abs_path('tests/templates') // where you want to store templates
-	upload_dir   = os.abs_path('tests/uploads') // where you want to store uploads
-)
+const template_dir = os.abs_path('tests/templates') // where you want to store templates
+const upload_dir = os.abs_path('tests/uploads') // where you want to store uploads
 
 struct Theme {}
 
@@ -19,10 +17,10 @@ struct App {
 	vaunt.Util
 pub:
 	controllers  []&vweb.ControllerPath
-	template_dir string                 [vweb_global]
-	upload_dir   string                 [vweb_global]
+	template_dir string                 @[vweb_global]
+	upload_dir   string                 @[vweb_global]
 pub mut:
-	dev    bool      [vweb_global] // used by Vaunt internally
+	dev    bool      @[vweb_global] // used by Vaunt internally
 	theme  Theme
 	db     sqlite.DB
 	s_html string // used by Vaunt to generate html
@@ -71,14 +69,14 @@ pub fn (mut app App) before_request() {
 	app.Util.db = app.db
 }
 
-['/']
+@['/']
 pub fn (mut app App) home() vweb.Result {
 	// save html in `app.s_html` first before returning it
 	app.s_html = '<h1>The home page</h1>'
 	return app.html(app.s_html)
 }
 
-['/articles/:category_name/:article_name']
+@['/articles/:category_name/:article_name']
 pub fn (mut app App) category_article_page(category_name string, article_name string) vweb.Result {
 	// save html in `app.s_html` first before returning it
 	app.s_html = app.category_article_html(category_name, article_name, template_dir) or {
@@ -87,14 +85,14 @@ pub fn (mut app App) category_article_page(category_name string, article_name st
 	return app.html(app.s_html)
 }
 
-['/articles/:article_name']
+@['/articles/:article_name']
 pub fn (mut app App) article_page(article_name string) vweb.Result {
 	// save html in `app.s_html` first before returning it
 	app.s_html = app.article_html(article_name, template_dir) or { return app.not_found() }
 	return app.html(app.s_html)
 }
 
-['/tags/:tag_name']
+@['/tags/:tag_name']
 pub fn (mut app App) tag_page(tag_name string) vweb.Result {
 	app.s_html = tag_name
 	return app.html(tag_name)

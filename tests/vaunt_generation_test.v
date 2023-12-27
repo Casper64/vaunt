@@ -5,36 +5,35 @@ import db.sqlite
 import vaunt
 import json
 
-const (
-	sport                      = 12381
-	sport2                     = 12382
-	localserver                = '127.0.0.1:${sport}'
-	exit_after_time            = 12000 // milliseconds
-	vexe                       = os.getenv('VEXE')
-	serverexe                  = os.join_path(os.cache_dir(), 'vaunt_generation_test_server.exe')
-	db_file                    = os.join_path(os.cache_dir(), 'vaunt_generation_test.db')
+const sport = 12381
+const sport2 = 12382
+const localserver = '127.0.0.1:${sport}'
+const exit_after_time = 12000 // milliseconds
 
-	output_dir                 = os.abs_path('tests/public')
-	static_dir                 = os.abs_path('tests/static')
-	upload_dir                 = os.abs_path('tests/uploads')
-	md_dir                     = os.abs_path('tests/md') // where you want to markdown files
+const vexe = os.getenv('VEXE')
+const serverexe = os.join_path(os.cache_dir(), 'vaunt_generation_test_server.exe')
+const db_file = os.join_path(os.cache_dir(), 'vaunt_generation_test.db')
 
-	jwt_token                  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwIiwibmFtZSI6ImFkbWluIiwiaWF0IjoxNjg0MDkwMTgwfQ.OJvgvMZ2uS6odHQ6vfp9zMnV765ssH4bjcppDKUxS9k'
+const output_dir = os.abs_path('tests/public')
+const static_dir = os.abs_path('tests/static')
+const upload_dir = os.abs_path('tests/uploads')
+const md_dir = os.abs_path('tests/md') // where you want to markdown files
 
-	article_names              = ['normal', 'with space', 'differentCaps', 'without category']
-	category_names             = ['web', 'category space', 'categoryCaps', '']
-	correct_article_names      = ['normal', 'with-space', 'differentcaps', 'without-category']
-	correct_category_names     = ['web', 'category-space', 'categorycaps', '']
-	no_show_article            = 'show'
+const jwt_token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwIiwibmFtZSI6ImFkbWluIiwiaWF0IjoxNjg0MDkwMTgwfQ.OJvgvMZ2uS6odHQ6vfp9zMnV765ssH4bjcppDKUxS9k'
 
-	tag_names                  = ['first s', 'SeCond']
-	correct_tag_names          = ['first-s', 'second']
+const article_names = ['normal', 'with space', 'differentCaps', 'without category']
+const category_names = ['web', 'category space', 'categoryCaps', '']
+const correct_article_names = ['normal', 'with-space', 'differentcaps', 'without-category']
+const correct_category_names = ['web', 'category-space', 'categorycaps', '']
+const no_show_article = 'show'
 
-	dynamic_arguments          = ['a', 'b', 'c']
-	multiple_dynamic_arguments = [['1', 'a'], ['2', 'b'], ['3', 'c']]
+const tag_names = ['first s', 'SeCond']
+const correct_tag_names = ['first-s', 'second']
 
-	seo_url                    = 'https://example.com'
-)
+const dynamic_arguments = ['a', 'b', 'c']
+const multiple_dynamic_arguments = [['1', 'a'], ['2', 'b'], ['3', 'c']]
+
+const seo_url = 'https://example.com'
 
 // setup of vaunt webserver
 fn testsuite_begin() {

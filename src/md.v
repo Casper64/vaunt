@@ -236,7 +236,7 @@ fn insert_table(tag &html.Tag) Block {
 	}
 }
 
-[inline]
+@[inline]
 fn replace_tag_name(txt string, tag string) string {
 	return txt.replace('<${tag}>', '').replace('</${tag}>', '')
 }

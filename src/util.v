@@ -129,7 +129,7 @@ pub:
 	link string
 }
 
-[params]
+@[params]
 pub struct TOCParams {
 	// by default show h1-h3
 	min_level int = 1

@@ -10,24 +10,22 @@ import time
 import json
 import stbi
 
-pub const (
-	resizable_image_mimes = ['.png', '.jpg', '.jpeg', '.tga', '.bmp']
-	small_image_size      = 640
-	medium_image_size     = 1280
-)
+pub const resizable_image_mimes = ['.png', '.jpg', '.jpeg', '.tga', '.bmp']
+pub const small_image_size = 640
+pub const medium_image_size = 1280
 
 pub struct Api {
 	vweb.Context
-	secret string [vweb_global]
+	secret string @[vweb_global]
 pub:
 	middlewares map[string][]vweb.Middleware = {
 		'/': [cors]
 	}
-	template_dir string [required; vweb_global]
-	upload_dir   string [required; vweb_global]
-	articles_url string [required; vweb_global]
+	template_dir string @[required; vweb_global]
+	upload_dir   string @[required; vweb_global]
+	articles_url string @[required; vweb_global]
 pub mut:
-	db orm.Connection [required]
+	db orm.Connection @[required]
 }
 
 // simple cors handler for admin panel dev server, that's also why you see method "options" on some routes
@@ -51,13 +49,13 @@ pub fn (mut app Api) before_request() {
 
 // 			Categories
 // ==========================
-['/categories'; get; options]
+@['/categories'; get; options]
 pub fn (mut app Api) get_categories() vweb.Result {
 	categories := get_all_categories(app.db)
 	return app.json(categories)
 }
 
-['/categories'; post]
+@['/categories'; post]
 pub fn (mut app Api) create_category() vweb.Result {
 	if is_empty('name', app.form) {
 		app.set_status(400, '')
@@ -84,7 +82,7 @@ pub fn (mut app Api) create_category() vweb.Result {
 	return app.json(new_category)
 }
 
-['/categories/:category_id'; get; options]
+@['/categories/:category_id'; get; options]
 pub fn (mut app Api) get_category(category_id int) vweb.Result {
 	rows := sql app.db {
 		select from Category where id == category_id
@@ -100,7 +98,7 @@ pub fn (mut app Api) get_category(category_id int) vweb.Result {
 	}
 }
 
-['/categories/:cat_id'; delete]
+@['/categories/:cat_id'; delete]
 pub fn (mut app Api) delete_category(cat_id int) vweb.Result {
 	sql app.db {
 		delete from Category where id == cat_id
@@ -120,7 +118,7 @@ pub fn (mut app Api) delete_category(cat_id int) vweb.Result {
 	return app.ok('ok')
 }
 
-['/categories/:category_id'; put]
+@['/categories/:category_id'; put]
 pub fn (mut app Api) update_category(category_id int) vweb.Result {
 	if is_empty('name', app.form) {
 		app.set_status(400, '')
@@ -154,7 +152,7 @@ pub fn (mut app Api) update_category(category_id int) vweb.Result {
 // 			Articles
 // ==========================
 
-['/articles'; get; options]
+@['/articles'; get; options]
 pub fn (mut app Api) get_articles() vweb.Result {
 	if is_empty('category', app.query) {
 		articles := get_all_articles(app.db)
@@ -166,7 +164,7 @@ pub fn (mut app Api) get_articles() vweb.Result {
 	}
 }
 
-['/articles'; post]
+@['/articles'; post]
 pub fn (mut app Api) create_article() vweb.Result {
 	if is_empty('name', app.form) || is_empty('description', app.form) {
 		app.set_status(400, '')
@@ -230,7 +228,7 @@ pub fn (mut app Api) create_article() vweb.Result {
 	return app.json(article)
 }
 
-['/articles/md'; post]
+@['/articles/md'; post]
 pub fn (mut app Api) create_article_from_markdown() vweb.Result {
 	mut fdata := app.files['markdown']
 	if fdata.len != 1 {
@@ -245,13 +243,13 @@ pub fn (mut app Api) create_article_from_markdown() vweb.Result {
 	return app.create_article()
 }
 
-['/articles/:article_id'; get; options]
+@['/articles/:article_id'; get; options]
 pub fn (mut app Api) get_article(article_id int) vweb.Result {
 	article := get_article(app.db, article_id) or { return app.not_found() }
 	return app.json(article)
 }
 
-['/articles/:article_id'; delete]
+@['/articles/:article_id'; delete]
 pub fn (mut app Api) delete_article(article_id int) vweb.Result {
 	if article_id == 0 {
 		app.set_status(400, '')
@@ -291,7 +289,7 @@ pub fn (mut app Api) delete_article(article_id int) vweb.Result {
 	return app.ok('deleted article with id ${article_id}')
 }
 
-['/articles/:article_id'; put]
+@['/articles/:article_id'; put]
 pub fn (mut app Api) update_article(article_id int) vweb.Result {
 	if article_id == 0 {
 		app.set_status(400, '')
@@ -405,7 +403,7 @@ fn (mut app Api) get_all_image_blocks(article_id int) ![]Block {
 // 			Blocks
 // ==========================
 
-['/blocks'; get; options]
+@['/blocks'; get; options]
 pub fn (mut app Api) get_blocks() vweb.Result {
 	if is_empty('article', app.query) {
 		app.set_status(400, '')
@@ -426,7 +424,7 @@ pub fn (mut app Api) get_blocks() vweb.Result {
 	}
 }
 
-['/blocks'; post]
+@['/blocks'; post]
 pub fn (mut app Api) save_blocks() vweb.Result {
 	if is_empty('article', app.query) {
 		app.set_status(400, '')
@@ -447,13 +445,13 @@ pub fn (mut app Api) save_blocks() vweb.Result {
 // 			Tags
 // ========================
 
-['/tags'; get; options]
+@['/tags'; get; options]
 pub fn (mut app Api) get_tags() vweb.Result {
 	tags := get_all_tags(app.db)
 	return app.json(tags)
 }
 
-['/tags'; post]
+@['/tags'; post]
 pub fn (mut app Api) create_tag(name string, color string) vweb.Result {
 	if name == '' || color == '' {
 		app.set_status(400, '')
@@ -481,7 +479,7 @@ pub fn (mut app Api) create_tag(name string, color string) vweb.Result {
 	return app.json(tag)
 }
 
-['/tags'; put]
+@['/tags'; put]
 pub fn (mut app Api) update_tag() vweb.Result {
 	tag_id := app.form['tag_id'].int()
 	if tag_id == 0 || is_empty('name', app.form) || is_empty('color', app.form) {
@@ -518,13 +516,13 @@ pub fn (mut app Api) update_tag() vweb.Result {
 	return app.json(base_tag)
 }
 
-['/tags/:article'; get; options]
+@['/tags/:article'; get; options]
 pub fn (mut app Api) get_tags_from_article(article int) vweb.Result {
 	tags := get_tags_from_article(app.db, article)
 	return app.json(tags)
 }
 
-['/tags/:article'; post]
+@['/tags/:article'; post]
 pub fn (mut app Api) add_tag_to_article(article int) vweb.Result {
 	if is_empty('tag_id', app.form) {
 		app.set_status(400, '')
@@ -551,7 +549,7 @@ pub fn (mut app Api) add_tag_to_article(article int) vweb.Result {
 	return app.json(tag)
 }
 
-['/tags/:tag_id'; delete]
+@['/tags/:tag_id'; delete]
 pub fn (mut app Api) delete_tag(tag_id int) vweb.Result {
 	if tag_id == 0 {
 		app.set_status(400, '')
@@ -601,7 +599,7 @@ pub mut:
 }
 
 // implement editor.js link backend --> https://github.com/editor-js/link
-['/fetch-link'; get; options]
+@['/fetch-link'; get; options]
 pub fn (mut app Api) fetch_link() vweb.Result {
 	if is_empty('url', app.query) {
 		return app.text('error: query parameter "url" is not specified')
@@ -636,7 +634,7 @@ pub fn (mut app Api) fetch_link() vweb.Result {
 	return app.json(link_data)
 }
 
-['/publish'; get; options]
+@['/publish'; get; options]
 pub fn (mut app Api) publish_article() vweb.Result {
 	if is_empty('article', app.query) {
 		app.set_status(400, '')
@@ -702,7 +700,7 @@ pub mut:
 	file    map[string]string
 }
 
-['/upload-image'; options; post]
+@['/upload-image'; options; post]
 pub fn (mut app Api) upload_image_endpoint() vweb.Result {
 	// cors
 	if app.req.method == .options {
@@ -741,7 +739,7 @@ pub fn (mut app Api) upload_image_endpoint() vweb.Result {
 	return app.json(response)
 }
 
-['/delete-image'; options; post]
+@['/delete-image'; options; post]
 pub fn (mut app Api) delete_image_endpoint() vweb.Result {
 	// cors
 	if app.req.method == .options {

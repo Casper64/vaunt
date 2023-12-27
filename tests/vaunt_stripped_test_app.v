@@ -8,7 +8,7 @@ import time
 struct App {
 	vweb.Context
 pub mut:
-	dev    bool   [vweb_global] // used by Vaunt internally
+	dev    bool   @[vweb_global] // used by Vaunt internally
 	s_html string
 	// used by Vaunt to generate html
 }

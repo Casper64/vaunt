@@ -13,35 +13,33 @@ import net.http
 
 // bcrypt has a max length of 72 characters. I choose to enforce a maximum of
 // 64 characters since it is a power of 2.
-const (
-	min_password_length = 8
-	max_password_length = 64
-	bcrypt_cost         = 10
-	jwt_cookie_name     = 'vaunt_token'
-	cookie_live_time    = time.now().add(time.hour * 24 * 30) // cookie expire time
-)
+const min_password_length = 8
+const max_password_length = 64
+const bcrypt_cost = 10
+const jwt_cookie_name = 'vaunt_token'
+const cookie_live_time = time.now().add(time.hour * 24 * 30) // cookie expire time
 
 // 			Auth endpoint
 // ==============================
 
 pub struct Auth {
 	vweb.Context
-	secret string [vweb_global]
+	secret string @[vweb_global]
 pub mut:
-	db orm.Connection [required]
+	db orm.Connection @[required]
 }
 
 pub fn (mut app Auth) not_found() vweb.Result {
 	return app.login()
 }
 
-[get]
+@[get]
 pub fn (mut app Auth) login() vweb.Result {
 	html := $tmpl('./templates/login.html')
 	return app.html(html)
 }
 
-['/login'; post]
+@['/login'; post]
 pub fn (mut app Auth) login_user(username string, password string) vweb.Result {
 	// if jwt is valid make a cookie and redirect to admin
 	if user := verify_user(app.db, username, password) {
@@ -79,11 +77,11 @@ fn make_cookie(token string, expires time.Time) http.Cookie {
 // 			User
 // =======================
 
-[table: 'users']
+@[table: 'users']
 pub struct User {
-	id       int    [primary; sql: serial]
-	username string [nonull; sql_type: 'TEXT'; unique]
-	password string [nonull; sql_type: 'TEXT']
+	id       int    @[primary; sql: serial]
+	username string @[sql_type: 'TEXT'; unique]
+	password string @[sql_type: 'TEXT']
 }
 
 // verify_user checks `db` if a user exists with username=`uname` and password=`upass`

@@ -8,17 +8,17 @@ pub interface DynamicConfig {
 }
 
 pub struct DynamicRoute {
-	arguments []string [required]
+	arguments []string @[required]
 	path      string
 }
 
 pub struct MultipleDynamicRoute {
-	arguments [][]string [required]
+	arguments [][]string @[required]
 	path      string
 }
 
 pub struct MarkdownDynamicRoute {
-	md_dir string [required]
+	md_dir string @[required]
 	path   string
 }
 

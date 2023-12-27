@@ -6,11 +6,9 @@ import os
 import db.sqlite
 import time
 
-const (
-	template_dir = os.abs_path('tests/templates') // where you want to store templates
-	upload_dir   = os.abs_path('tests/uploads') // where you want to store uploads
-	md_dir       = os.abs_path('tests/md') // where you want to serve markdown files from
-)
+const template_dir = os.abs_path('tests/templates') // where you want to store templates
+const upload_dir = os.abs_path('tests/uploads') // where you want to store uploads
+const md_dir = os.abs_path('tests/md') // where you want to serve markdown files from
 
 struct Theme {}
 
@@ -20,11 +18,11 @@ struct App {
 	vaunt.Util
 pub:
 	controllers  []&vweb.ControllerPath
-	template_dir string                 [vweb_global]
-	upload_dir   string                 [vweb_global]
+	template_dir string                 @[vweb_global]
+	upload_dir   string                 @[vweb_global]
 pub mut:
-	dev    bool      [vweb_global] // used by Vaunt internally
-	seo    vaunt.SEO [vweb_global]
+	dev    bool      @[vweb_global] // used by Vaunt internally
+	seo    vaunt.SEO @[vweb_global]
 	theme  Theme
 	db     sqlite.DB
 	s_html string // used by Vaunt to generate html
@@ -94,20 +92,20 @@ pub fn (mut app App) before_request() {
 	app.Util.db = app.db
 }
 
-['/articles/:category_name/:article_name']
+@['/articles/:category_name/:article_name']
 pub fn (mut app App) category_article_page(category_name string, article_name string) vweb.Result {
 	html := '${category_name} ${article_name}'
 	app.s_html = html
 	return app.html(html)
 }
 
-['/articles/:article_name']
+@['/articles/:article_name']
 pub fn (mut app App) article_page(article_name string) vweb.Result {
 	app.s_html = article_name
 	return app.html(article_name)
 }
 
-['/tags/:tag_name']
+@['/tags/:tag_name']
 pub fn (mut app App) tag_page(tag_name string) vweb.Result {
 	app.s_html = tag_name
 	return app.html(tag_name)
@@ -138,25 +136,25 @@ pub fn (mut app App) req_url() vweb.Result {
 }
 
 // nested index route
-['/nested/']
+@['/nested/']
 pub fn (mut app App) nested_index() vweb.Result {
 	app.s_html = 'nested index'
 	return app.html('nested index')
 }
 
-['/dyn/:dynamic']
+@['/dyn/:dynamic']
 pub fn (mut app App) custom_dynamic(dynamic string) vweb.Result {
 	app.s_html = dynamic
 	return app.html(app.s_html)
 }
 
-['/mult/:a/:b']
+@['/mult/:a/:b']
 pub fn (mut app App) multiple_dynamics(a string, b string) vweb.Result {
 	app.s_html = '${a}/${b}'
 	return app.html(app.s_html)
 }
 
-['/md/:path...']
+@['/md/:path...']
 pub fn (mut app App) from_markdown_folder(path string) vweb.Result {
 	raw_html := vaunt.get_html_from_markdown(md_dir, path) or {
 		// markdown file does not exist
@@ -166,7 +164,7 @@ pub fn (mut app App) from_markdown_folder(path string) vweb.Result {
 	return app.html(app.s_html)
 }
 
-['/posting'; post]
+@['/posting'; post]
 pub fn (mut app App) only_post() vweb.Result {
 	app.s_html = 'post'
 	return app.html(app.s_html)

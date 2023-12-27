@@ -17,7 +17,7 @@ pub enum TwitterCardType {
 // see https://developer.twitter.com/en/docs/twitter-for-websites/cards/guides/getting-started
 pub struct Twitter {
 pub mut:
-	card_type TwitterCardType [name: 'card'] = .summary
+	card_type TwitterCardType = .summary @[name: 'card']
 	// @username for the website used in the card footer.
 	site string
 	// @username for the content creator / author.
@@ -45,17 +45,17 @@ pub mut:
 pub struct OpenGraph {
 pub:
 	// add this as `prefix="@app.seo.og.prefix"` attribute to the `html` tag in your page
-	prefix string [skip] = 'og: https://ogp.me/ns#'
+	prefix string = 'og: https://ogp.me/ns#' @[skip]
 pub mut:
 	title            string
-	og_type          string           [name: 'type']
-	image_url        string           [name: 'image']
+	og_type          string           @[name: 'type']
+	image_url        string           @[name: 'image']
 	url              string
 	description      string
 	audio            string
 	determiner       string
 	locale           string
-	locale_alternate []string         [name: 'locale:alternate']
+	locale_alternate []string         @[name: 'locale:alternate']
 	site_name        string
 	video            string
 	article          OpenGraphArticle
@@ -190,22 +190,22 @@ fn (seo &SEO) get_meta_from[T](prop T, to_meta fn (string, string) string) []str
 
 // meta tag generators
 
-[inline]
+@[inline]
 fn create_og_meta(property string, content string) string {
 	return '<meta property="og:${property}" content="${content}" />'
 }
 
-[inline]
+@[inline]
 fn create_og_article_meta(property string, content string) string {
 	return '<meta property="article:${property}" content="${content}" />'
 }
 
-[inline]
+@[inline]
 fn create_twitter_meta(property string, content string) string {
 	return '<meta property="twitter:${property}" content="${content}" />'
 }
 
-[inline]
+@[inline]
 fn create_meta(property string, content string) string {
 	return '<meta property="${property}" content="${content}" />'
 }
