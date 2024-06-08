@@ -1,5 +1,8 @@
 # Vaunt
 
+> [!IMPORTANT]
+> This repository will no longer be maintained as it's built on vweb, vlang's old web module. It is not compatible with veb.
+
 **Current version:** 0.2
 
 Vaunt is a static site generator with built-in cms and visual block editor
